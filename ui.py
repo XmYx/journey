@@ -6,6 +6,31 @@ st.set_page_config(layout="wide")
 import os
 import importlib.util
 
+from main import singleton as gs
+import os
+import json
+
+
+def load_config_and_initialize():
+    # Load the JSON file
+    with open("config/defaults.json", "r") as f:
+        config = json.load(f)
+
+    # Create the default folders if they don't exist
+    for key, folder in config['folders'].items():
+        os.makedirs(folder, exist_ok=True)
+
+    # Store the loaded configuration in gs.data
+    if "config" not in gs.data:
+        gs.data["config"] = {}
+    gs.data["config"].update(config)
+
+    return config
+
+
+config = load_config_and_initialize()
+print(gs.data['config'])
+
 # Function to import a module from a file path
 def import_module_from_path(module_name, file_path):
     spec = importlib.util.spec_from_file_location(module_name, file_path)

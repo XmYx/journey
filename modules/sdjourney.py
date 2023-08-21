@@ -92,10 +92,7 @@ def process_image(latent, selected_values, callback):
 
 def load_pipeline(model_choice):
     if gs.base_loaded != model_choice:
-
         if model_choice == "XL":
-            print("we will load")
-            gs.base_loaded = model_choice
             base_pipe = DiffusionPipeline.from_pretrained(
                 "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16",
                 use_safetensors=True
@@ -103,27 +100,14 @@ def load_pipeline(model_choice):
 
             base_pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
             # base_pipe.vae = AutoencoderTiny.from_pretrained("madebyollin/taesdxl", torch_dtype=torch.float16).to("cuda")
-            refiner_pipe = DiffusionPipeline.from_pretrained(
-                "stabilityai/stable-diffusion-xl-refiner-1.0",
-                text_encoder_2=base_pipe.text_encoder_2,
-                vae=base_pipe.vae,
-                torch_dtype=torch.float16,
-                use_safetensors=True,
-                variant="fp16",
-            )
             from modules.sdjourney import lowvram
 
             if lowvram:
                 base_pipe.enable_model_cpu_offload()
-                refiner_pipe.enable_model_cpu_offload()
                 base_pipe.enable_vae_slicing()
                 base_pipe.enable_vae_tiling()
-                refiner_pipe.enable_vae_slicing()
-                refiner_pipe.enable_vae_tiling()
             else:
                 base_pipe.disable_attention_slicing()
-                refiner_pipe.disable_attention_slicing()
-            refiner_pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
 
             def replace_call(pipe, new_call):
                 def call_with_self(*args, **kwargs):
@@ -133,12 +117,35 @@ def load_pipeline(model_choice):
 
             base_pipe.generate = replace_call(base_pipe, new_call)
             gs.data["models"]["base"] = base_pipe
-            gs.data["models"]["refiner"] = refiner_pipe
             print("XL LOADED")
         elif model_choice == "Kandinsky":
             pipe = AutoPipelineForText2Image.from_pretrained("kandinsky-community/kandinsky-2-2-decoder",
                                                              torch_dtype=torch.float16)
             gs.data["models"]["base"] = pipe
+            print("Kandinsky loaded")
+        if 'refiner' not in gs.data['models']:
+            from modules.sdjourney import lowvram
+
+            refiner_pipe = DiffusionPipeline.from_pretrained(
+                "stabilityai/stable-diffusion-xl-refiner-1.0",
+                # text_encoder_2=gs.data["models"]["base"].text_encoder_2,
+                # vae=gs.data["models"]["base"].vae,
+                torch_dtype=torch.float16,
+                use_safetensors=True,
+                variant="fp16",
+            )
+            if lowvram:
+                refiner_pipe.enable_model_cpu_offload()
+                refiner_pipe.enable_vae_slicing()
+                refiner_pipe.enable_vae_tiling()
+            else:
+                refiner_pipe.disable_attention_slicing()
+            refiner_pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
+            gs.data["models"]["refiner"] = refiner_pipe
+            print("Refiner Loaded")
+
+
+        gs.base_loaded = model_choice
 
 def preview_latents(latents):
     if "rgb_factor" not in gs.data:
@@ -219,7 +226,7 @@ def plugin_tab():
         st.session_state.image = st.empty()
 
         steps = selected_values['Steps']
-        generate_button = st.button("Generate")
+        generate_button = st.button("Generate", key="sd_journey_gen")
         num_images = len(st.session_state["images"])
         cols = st.columns(2)
         if 'image_placeholders' not in st.session_state:
