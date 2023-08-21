@@ -2,6 +2,7 @@ import base64
 import json
 import os
 import streamlit as st
+from streamlit.elements.progress import ProgressMixin
 
 from extras.block_helpers import *
 from main import singleton as gs
@@ -35,8 +36,12 @@ def dynamic_controls(controls_config, block_id):
         else:
             location = st if expose else expander
             ui_function = getattr(location, control_type)
-            values[control_name] = ui_function(control_name, **config['params'], key=unique_key)
-
+            representation = repr(ui_function)
+            print(representation)
+            if 'progress' in representation:
+                values[control_name] = ui_function(value=0)
+            else:
+                values[control_name] = ui_function(control_name, **config['params'], key=unique_key)
     return values
 
 
@@ -46,6 +51,11 @@ def run_pipeline():
     for block in gs.data.get("pipeline", []):
         fn_name = blocks[block['name']]['fn']
         merged_values = {**chained_data, **block.get('values', {})}
+
+        # Check if the block has a progressbar and add it to merged_values if it does
+        if "progressbar" in blocks[block['name']]['controls']:
+            merged_values["progressbar"] = block['values']["progressbar"]
+
         result = globals()[fn_name](merged_values)
         chained_data.update(result)
         results.append(result)
@@ -67,6 +77,8 @@ def plugin_tab():
     main_col_1, main_col_2 = st.columns(2)
 
     with main_col_1:
+        run_btn = st.button("Run Pipeline")
+
         # Display existing blocks and allow deletion
         for idx, block in enumerate(gs.data["pipeline"]):
 
@@ -74,6 +86,7 @@ def plugin_tab():
                 col1, col2, col3, col4 = st.columns([5,1,1,1], gap="small")
             else:
                 col1 = st.empty()
+                col1 = main_col_1
 
             with col1:
                 #st.write(f"Configuring {block['name']}:")
@@ -131,6 +144,8 @@ def plugin_tab():
         if selected_file != "Choose a file...":
             with open(os.path.join('pipelines', selected_file), 'r') as f:
                 pipeline_data = json.load(f)
+                st.session_state.next_block_id = 0
+                gs.data["pipeline"].clear()
                 gs.data["pipeline"] = pipeline_data
                 st.session_state.refresh = True
                 st.experimental_rerun()
@@ -139,6 +154,8 @@ def plugin_tab():
         uploaded_file = st.file_uploader("Or upload a Pipeline JSON", type="json")
         if uploaded_file:
             pipeline_data = json.loads(uploaded_file.getvalue())
+            st.session_state.next_block_id = 0
+            gs.data["pipeline"].clear()
             gs.data["pipeline"] = pipeline_data
             st.session_state.refresh = True
 
@@ -189,6 +206,7 @@ def plugin_tab():
 
         if st.button("Clear Pipeline", key="clear_pipeline_blocks"):
             gs.data["pipeline"].clear()
+            st.session_state.next_block_id = 0
             st.experimental_rerun()
         if st.button("Clear Images", key="clear_images_blocks"):
             gs.data["images"].clear()
@@ -196,7 +214,6 @@ def plugin_tab():
 
     with main_col_1:
         loop = st.sidebar.checkbox('Loop')
-        run_btn = st.sidebar.button("Run Pipeline")
 
         if run_btn:
             results = run_pipeline()

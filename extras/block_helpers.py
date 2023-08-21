@@ -5,8 +5,9 @@ import numpy as np
 from PIL import Image
 from diffusers import StableDiffusionXLPipeline, StableDiffusionXLImg2ImgPipeline, KandinskyV22CombinedPipeline
 
-
+from extras import resize_right, interp_methods
 from extras.sdjourney_backend import aspect_ratios, SchedulerType, get_scheduler, scheduler_type_values
+from extras.styles import apply_style, style_keys
 from main import singleton as gs
 
 
@@ -106,6 +107,28 @@ blocks = {
         },
         "fn": "dummy_fn"
     },
+    "Resize": {
+        "category": "middle",
+        "controls": {
+            "width": {
+                "type": "slider",
+                "expose": False,
+                "params": {"value": 1024,
+                           "min_value":8,
+                           "max_value":4096,
+                           "step":8}
+            },
+            "height": {
+                "type": "slider",
+                "expose": False,
+                "params": {"value": 1024,
+                           "min_value":8,
+                           "max_value":4096,
+                           "step":8}
+            },
+        },
+        "fn": "resize"
+    },
 
 
     "Params": {
@@ -160,6 +183,12 @@ blocks = {
                 "expose": True,
                 "params": {"options": scheduler_type_values}
             },
+            "progressbar":{
+              "type":"progress",
+              "expose":True,
+                "params": {}
+
+            },
 
         },
     },
@@ -179,6 +208,18 @@ blocks = {
             },
 
         },
+    },
+    "XL Style": {
+        "category": "middle",
+        "controls": {
+            "style": {
+                "type": "selectbox",
+                "expose": True,
+                "params": {"options": style_keys}
+            },
+
+        },
+        "fn": "style"
     },
 
     "Add Noise": {
@@ -202,6 +243,29 @@ blocks = {
     },
 
 }
+
+def style(args):
+    prompt = args.get('prompt', "")
+    negative_prompt = args.get('negative_prompt', "")
+    style = args.get('style', 'None')
+    args['prompt'], args['negative_prompt'] = apply_style(style, prompt, negative_prompt)
+    return args
+def resize(args):
+
+    w = args["width"]
+    h = args["height"]
+    latents = gs.data.get("latents", None)
+    result = []
+    if latents is not None:
+        for latent in latents:
+            print(latent.shape)
+            new = resize_right.resize(latent, scale_factors=None, out_shape=[latent.shape[0],h // 8, w // 8],
+                    interp_method=interp_methods.cubic, support_sz=None,
+                    antialiasing=True, by_convs=False, scale_tolerance=None,
+                    max_numerator=10, pad_mode='constant')
+            result.append(new)
+    gs.data["latents"] = result
+    return args
 def load_xl(args):
 
     from modules.sdjourney import load_pipeline
@@ -220,7 +284,7 @@ def check_args(args, pipe):
         gen_args["negative_prompt_2"] = args.get('negative_prompt_2')
 
     if isinstance(pipe, StableDiffusionXLPipeline):
-        gen_args["width"], gen_args["height"] = aspect_ratios.get(args.get('aspect_ratio', "1024 x 1024 (1:1 Square)"))
+        gen_args["width"], gen_args["height"] = aspect_ratios.get(args.get('resolution', "1024 x 1024 (1:1 Square)"))
         gen_args["denoising_end"] = args.get('mid_point', 0.87)
         gen_args["num_images_per_prompt"] = int(args.get('num_images_per_prompt', 1))
 
@@ -230,7 +294,7 @@ def check_args(args, pipe):
         #gen_args["image"] = gs.data.get('latents')
 
     elif isinstance(pipe, KandinskyV22CombinedPipeline):
-        gen_args["width"], gen_args["height"] = aspect_ratios.get(args.get('aspect_ratio', "1024 x 1024 (1:1 Square)"))
+        gen_args["width"], gen_args["height"] = aspect_ratios.get(args.get('resolution', "1024 x 1024 (1:1 Square)"))
         gen_args["num_images_per_prompt"] = int(args.get('num_images_per_prompt', 1))
 
     scheduler = args['scheduler']
@@ -245,6 +309,15 @@ def generate(args):
         gs.data["models"]["base"].to(target_device)
 
     gen_args, pipe = check_args(args, gs.data["models"]["base"])
+
+    progressbar = args.get('progressbar', None)
+
+    def callback(i, t, latents):
+        if progressbar:
+            normalized_i = i / args.get('num_inference_steps', 10)
+            progressbar.progress(normalized_i)
+
+    gen_args["callback"] = callback
 
     if args["show_image"]:
         if isinstance(pipe, StableDiffusionXLPipeline):
@@ -262,6 +335,9 @@ def generate(args):
         result_dict = {}
 
     result_dict = {**args, **result_dict}
+    if progressbar:
+        progressbar.progress(1.0)
+
     return result_dict
 
 def refine(args):
