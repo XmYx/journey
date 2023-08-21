@@ -159,25 +159,25 @@ def preview_latents(latents):
         rgb_image = latents_ubyte.numpy()[:, :, ::-1]
         image = Image.fromarray(rgb_image)
         st.session_state.image_placeholders[idx].image(image, width=image.size[0] * 4)
-from streamlit_drawable_canvas import st_canvas
+# from streamlit_drawable_canvas import st_canvas
 
 def inpaint_image(image, mask):
     return image
 
 def plugin_tab():
-    # Specify canvas parameters in application
-    drawing_mode = st.sidebar.selectbox(
-        "Drawing tool:", ("point", "freedraw", "line", "rect", "circle", "transform")
-    )
-
-    stroke_width = st.sidebar.slider("Stroke width: ", 1, 25, 3)
-    if drawing_mode == 'point':
-        point_display_radius = st.sidebar.slider("Point display radius: ", 1, 25, 3)
-    stroke_color = st.sidebar.color_picker("Stroke color hex: ")
-    bg_color = st.sidebar.color_picker("Background color hex: ", "#eee")
-    bg_image = st.sidebar.file_uploader("Background image:", type=["png", "jpg"])
-
-    realtime_update = st.sidebar.checkbox("Update in realtime", True)
+    # # Specify canvas parameters in application
+    # drawing_mode = st.sidebar.selectbox(
+    #     "Drawing tool:", ("point", "freedraw", "line", "rect", "circle", "transform")
+    # )
+    #
+    # stroke_width = st.sidebar.slider("Stroke width: ", 1, 25, 3)
+    # if drawing_mode == 'point':
+    #     point_display_radius = st.sidebar.slider("Point display radius: ", 1, 25, 3)
+    # stroke_color = st.sidebar.color_picker("Stroke color hex: ")
+    # bg_color = st.sidebar.color_picker("Background color hex: ", "#eee")
+    # bg_image = st.sidebar.file_uploader("Background image:", type=["png", "jpg"])
+    #
+    # realtime_update = st.sidebar.checkbox("Update in realtime", True)
 
     refresh = None
     col1, col2 = st.columns([2, 3])
@@ -199,24 +199,24 @@ def plugin_tab():
                 preview_latents(latents)
         selected_values = dynamic_controls(controls_config)
     with col2:
-        st.session_state.image = st_canvas(
-            fill_color="rgba(255, 165, 0, 0.3)",  # Fixed fill color with some opacity
-            stroke_width=stroke_width,
-            stroke_color=stroke_color,
-            background_color=bg_color,
-            background_image=st.session_state.upscaled_image if st.session_state.upscaled_image else None,
-            update_streamlit=realtime_update,
-            width=1024,
-            height=1024,
-            drawing_mode=drawing_mode,
-            point_display_radius=point_display_radius if drawing_mode == 'point' else 0,
-            key="canvas",
-        )
-        if st.session_state.image.image_data is not None:
-            st.image(st.session_state.image.image_data)
-            if st.button("Inpaint"):
-                st.session_state.upscaled_image = inpaint_image(st.session_state.upscaled_image, st.session_state.image.image_data )
-        #st.session_state.image = st.empty()
+        # st.session_state.image = st_canvas(
+        #     fill_color="rgba(255, 165, 0, 0.3)",  # Fixed fill color with some opacity
+        #     stroke_width=stroke_width,
+        #     stroke_color=stroke_color,
+        #     background_color=bg_color,
+        #     background_image=st.session_state.upscaled_image if st.session_state.upscaled_image else None,
+        #     update_streamlit=realtime_update,
+        #     width=1024,
+        #     height=1024,
+        #     drawing_mode=drawing_mode,
+        #     point_display_radius=point_display_radius if drawing_mode == 'point' else 0,
+        #     key="canvas",
+        # )
+        # if st.session_state.image.image_data is not None:
+        #     st.image(st.session_state.image.image_data)
+            # if st.button("Inpaint"):
+            #     st.session_state.upscaled_image = inpaint_image(st.session_state.upscaled_image, st.session_state.image.image_data )
+        st.session_state.image = st.empty()
 
         steps = selected_values['Steps']
         generate_button = st.button("Generate")
@@ -234,13 +234,13 @@ def plugin_tab():
                     index = i * 2 + j
                     if index < num_images:  # Check if we haven't exceeded the number of images
                         cols[j].image(st.session_state["images"][index])
-                        if cols[j].button(f"Upscale {index + 1}"):
+                        if cols[j].button(f"Refine {index + 1}"):
                             process_image(st.session_state["latents"][index], selected_values, callback)
     with col1:
         load_btn = st.button("Pre-Load Models")
         # Display upscaled image if it exists
-        # if st.session_state.upscaled_image:
-        #     st.image(st.session_state.upscaled_image, caption="Upscaled Image")
+        if st.session_state.upscaled_image:
+            st.image(st.session_state.upscaled_image, caption="Refined Image")
     if load_btn:
         model_choice = selected_values['BasePipeline']
         load_pipeline(model_choice)
