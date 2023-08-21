@@ -4,54 +4,59 @@ import json
 import streamlit as st
 from main import singleton as gs
 
-
 plugin_info = {"name": "Blocks"}
-
 blocks = {
-    "StarterBlock": {
+
+    "Loader": {
         "category": "starter",
+        "controls": {
+            "select_model": {
+                "type": "selectbox",
+                "expose": True,
+                "params": {"options":["XL"]}
+            },
+        },
+        "fn": "load_xl"
+    },
+
+    "Prompt": {
+        "category": "middle",
         "controls": {
             "prompt": {
                 "type": "text_input",
                 "expose": True,
-                "params": {"value": "Starter Block"}
+                "params": {"value": "Corgi"}
             },
-            "num_inference_steps": {
-                "type": "slider",
-                "expose": True,
-                "params": {"value": 25}
-            }
         },
-        "fn": "starter_fn"
+        "fn": "dummy_fn"
     },
-    "MiddleBlock": {
+
+    "Params": {
         "category": "middle",
         "controls": {
-            "middle_text": {
-                "type": "text_input",
+            "num_inference_steps": {
+                "type": "slider",
                 "expose": False,
-                "params": {"value": "Middle Block"}
-            }
+                "params": {"value": 25}
+            },
+            "guidance_scale": {
+                "type": "slider",
+                "expose": False,
+                "params": {"value": 5.00,
+                           "min_value":0.01,
+                           "max_value":25.00}
+            },
         },
-        "fn": "middle_fn"
+        "fn": "dummy_fn"
     },
-    "EndBlock": {
-        "category": "end",
-        "controls": {
-            "end_text": {
-                "type": "text_input",
-                "expose": True,
-                "params": {"value": "End Block"}
-            }
-        },
-        "fn": "end_fn"
-    },
+
     "Generate": {
         "category": "end",
         "fn": "generate"
     }
 }
-
+def load_xl(args):
+    return args
 def generate(args):
     target_device = "cuda"
     if gs.data["models"]["base"].device.type != target_device:
@@ -74,11 +79,11 @@ def generate(args):
 
 
 
-def starter_fn(starter_text):
+def dummy_fn(args):
 
-    print("starter module data", starter_text)
+    #print("starter module data", starter_text)
 
-    return starter_text
+    return args
 
 def middle_fn(middle_text):
     print(middle_text)
@@ -105,33 +110,38 @@ def dynamic_controls(controls_config, block_idx=None):
 def plugin_tab():
     refresh = False
     # Initialize session state
-    if 'pipeline' not in st.session_state:
-        st.session_state.pipeline = []
-        st.session_state.images = []  # To store images returned by blocks
+    if "refresh" not in st.session_state:
         st.session_state.refresh = False
+    if "pipeline" not in gs.data:
+        gs.data["pipeline"] = []
+    
+    if 'images' not in gs.data:
+        #gs.data["pipeline"] = []
+        gs.data["images"] = []  # To store images returned by blocks
+
 
     main_col_1, main_col_2 = st.columns(2)
 
     with main_col_1:
         # Display existing blocks and allow deletion
-        for idx, block in enumerate(st.session_state.pipeline):
-            col1, col2 = st.columns(2)
+        for idx, block in enumerate(gs.data["pipeline"]):
+            col1, col2 = st.columns([5,1], gap="small")
 
             with col1:
-                st.write(f"Configuring {block['name']}:")
+                #st.write(f"Configuring {block['name']}:")
                 if 'controls' in blocks[block['name']]:
                     updated_values = dynamic_controls(blocks[block['name']]['controls'], block_idx=idx)
                     block['values'].update(updated_values)  # Directly update the block's values
 
             with col2:
                 if st.button(f"Delete {block['name']}", key=f"delete_{idx}"):
-                    st.session_state.pipeline.pop(idx)
+                    gs.data["pipeline"].pop(idx)
                     st.experimental_rerun()
 
     with main_col_2:
         # Display all stored images in the third column
-        if st.session_state.images is not None:
-            display = st.session_state.images[::-1]  # Reverse the list using slicing
+        if gs.data["images"] is not None:
+            display = gs.data["images"][::-1]  # Reverse the list using slicing
             for img in display:
                 st.image(img)
     if st.session_state.refresh:
@@ -142,7 +152,7 @@ def plugin_tab():
 
         # Save Pipeline
         if st.button('Save Pipeline'):
-            pipeline_json = json.dumps(st.session_state.pipeline)
+            pipeline_json = json.dumps(gs.data["pipeline"])
             b64 = base64.b64encode(pipeline_json.encode()).decode()
             href = f'<a href="data:application/octet-stream;base64,{b64}" download="pipeline.json">Download Pipeline JSON</a>'
             st.markdown(href, unsafe_allow_html=True)
@@ -151,15 +161,15 @@ def plugin_tab():
         uploaded_file = st.file_uploader("Upload Pipeline JSON", type="json")
         if uploaded_file:
             pipeline_data = json.loads(uploaded_file.getvalue())
-            st.session_state.pipeline = pipeline_data
+            gs.data["pipeline"] = pipeline_data
             st.session_state.refresh = True
 
         # Display available blocks based on the last block's category
-        if not st.session_state.pipeline:
+        if not gs.data["pipeline"]:
             available_blocks = [name for name, block in blocks.items() if block['category'] == 'starter']
-        elif st.session_state.pipeline[-1]['category'] == 'starter':
+        elif gs.data["pipeline"][-1]['category'] == 'starter':
             available_blocks = [name for name, block in blocks.items() if block['category'] in ['middle', 'end']]
-        elif st.session_state.pipeline[-1]['category'] == 'middle':
+        elif gs.data["pipeline"][-1]['category'] == 'middle':
             available_blocks = [name for name, block in blocks.items() if block['category'] in ['middle', 'end']]
         else:
             st.write("Pipeline completed. Reset to add new blocks.")
@@ -171,18 +181,25 @@ def plugin_tab():
             else:
                 block_values = {}
             if st.button(f"Add {selected_block}"):
-                st.session_state.pipeline.append({
+                gs.data["pipeline"].append({
                     'name': selected_block,
                     'category': blocks[selected_block]['category'],
                     'values': block_values
                 })
                 st.experimental_rerun()
+        if st.button("Clear Pipeline", key="clear_pipeline_blocks"):
+            gs.data["pipeline"].clear()
+            st.experimental_rerun()
+        if st.button("Clear Images", key="clear_images_blocks"):
+            gs.data["images"].clear()
+            st.experimental_rerun()
+
     with main_col_1:
-        gn_btn = st.button("Generate")
+        gn_btn = st.button("Run Pipeline")
     if gn_btn:
         results = []
         chained_data = {}  # This will accumulate data across blocks
-        for block in st.session_state.pipeline:
+        for block in gs.data["pipeline"]:
             fn_name = blocks[block['name']]['fn']
             # Merge the accumulated data with the current block's values
             merged_values = {**chained_data, **block['values']}
@@ -199,7 +216,7 @@ def plugin_tab():
                 st.write(result['result_text'])
             elif 'result_image' in result:
                 #st.image(result['result_image'])
-                st.session_state.images.append(result['result_image'])  # Store the image in session_state
+                gs.data["images"].append(result['result_image'])  # Store the image in session_state
                 st.session_state.refresh = True
 
         st.write("All results:", results)
