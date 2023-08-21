@@ -286,7 +286,7 @@ def new_call(
 
             # compute the previous noisy sample x_t -> x_t-1
             latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0]
-            if i == num_target_steps:
+            if i == num_target_steps - 1:
                return_latents = latents.clone().detach().cpu()
             # call the callback, if provided
             if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):

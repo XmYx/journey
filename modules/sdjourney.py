@@ -219,7 +219,7 @@ def plugin_tab():
         st.session_state.image = st.empty()
 
         steps = selected_values['Steps']
-        generate_button = st.button("Generate")
+        generate_button = st.button("Generate", key="sd_journey_gen")
         num_images = len(st.session_state["images"])
         cols = st.columns(2)
         if 'image_placeholders' not in st.session_state:
