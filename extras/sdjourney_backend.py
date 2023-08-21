@@ -10,6 +10,7 @@ from diffusers import (DiffusionPipeline, DDIMScheduler, HeunDiscreteScheduler, 
 
 aspect_ratios = {
     "1024 x 1024 (1:1 Square)": (1024, 1024),
+    "1536 x 1024 (3:2 Photo)": (1536,1024),
     "1152 x 896 (9:7)": (1152, 896),
     "896 x 1152 (7:9)": (896, 1152),
     "1216 x 832 (19:13)": (1216, 832),
