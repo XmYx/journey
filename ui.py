@@ -31,6 +31,11 @@ def load_config_and_initialize():
 config = load_config_and_initialize()
 print(gs.data['config'])
 
+if "models" not in gs.data:
+    print("Instantiating models dictionary in singleton")
+    gs.data["models"] = {}
+
+
 # Function to import a module from a file path
 def import_module_from_path(module_name, file_path):
     spec = importlib.util.spec_from_file_location(module_name, file_path)

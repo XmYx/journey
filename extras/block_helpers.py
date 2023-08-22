@@ -66,8 +66,6 @@ class BaseWidget:
     def get_value(self):
         if hasattr(self.widget, 'value'):
             return self.widget.value()
-        else:
-            return self.widget
 class BaseBlock:
     widgets = List[BaseWidget]
 class BlockHolder:

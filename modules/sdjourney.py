@@ -24,9 +24,6 @@ from extras.sdjourney_backend import  controls_config, get_generation_args, Sche
 from extras.streamlit_helpers import dynamic_controls
 from main import singleton as gs
 
-if "models" not in gs.data:
-    print("Instantiating models dictionary in singleton")
-    gs.data["models"] = {}
 
 plugin_info = {"name": "SDJourney"}
 
