@@ -1,5 +1,7 @@
 import os
+from typing import List
 
+import streamlit as st
 import torch
 import numpy as np
 from PIL import Image
@@ -38,6 +40,39 @@ def load_lora(args):
     except Exception as e:
         print("Could not load LORA", repr(e))
     return args
+
+st_widgets = {
+    "text":"text_input",
+    "text_multi":"text_area",
+    "number":"number",
+    "slider":"slider",
+    "dropdown":"selectbox",
+    "checkbox":"checkbox",
+    "radio":"multiselect",
+}
+
+class BaseWidget:
+
+    widget_type: str = "text" # ["text", "number", "slider", "dropdown", "checkbox"]
+    multiline: bool = False
+    precision: str = "int"
+    def __init__(self):
+        if self.widget_type == "text":
+            self.widget_type = self.widget_type if not self.multiline else "text_multi"
+        self.widget = getattr(st, st_widgets[self.widget_type])
+    def get(self):
+        return self.widget
+
+    def get_value(self):
+        if hasattr(self.widget, 'value'):
+            return self.widget.value()
+        else:
+            return self.widget
+class BaseBlock:
+    widgets = List[BaseWidget]
+class BlockHolder:
+    blocks: List[BaseBlock] = None
+
 
 blocks = {
     "Loader": {
@@ -183,13 +218,6 @@ blocks = {
                 "expose": True,
                 "params": {"options": scheduler_type_values}
             },
-            "progressbar":{
-              "type":"progress",
-              "expose":True,
-                "params": {}
-
-            },
-
         },
     },
     "Refine": {
@@ -237,11 +265,9 @@ blocks = {
                            "min_value": 0.01,
                            "max_value": 1.00}
             },
-
         },
         "fn": "add_noise"
     },
-
 }
 
 def style(args):
@@ -309,7 +335,6 @@ def generate(args):
         gs.data["models"]["base"].to(target_device)
 
     gen_args, pipe = check_args(args, gs.data["models"]["base"])
-
     progressbar = args.get('progressbar', None)
 
     def callback(i, t, latents):
@@ -324,16 +349,17 @@ def generate(args):
             result = pipe.generate(**gen_args)
             gs.data["latents"] = result[0]
             result_dict = {"result_image": result[1]}
+            st.session_state.preview = result[1][0]
 
         else:
             result_dict = {"result_image": pipe(**gen_args).images}
             gs.data["latents"] = result_dict['result_image']
+            st.session_state.preview = result_dict['result_image'][0]
     else:
         gen_args['output_type'] = 'latent'
         result = pipe(**gen_args).images
         gs.data["latents"] = result
         result_dict = {}
-
     result_dict = {**args, **result_dict}
     if progressbar:
         progressbar.progress(1.0)

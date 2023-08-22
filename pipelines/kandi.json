@@ -1,0 +1,1 @@
+[{"name": "Loader", "category": "starter", "values": {"select_model": "Kandinsky"}, "block_id": 0}, {"name": "Prompt", "category": "middle", "values": {"prompt": ""}, "block_id": 1}, {"name": "Generate", "category": "middle", "values": {"show_image": true, "scheduler": "ddim"}, "block_id": 2}]

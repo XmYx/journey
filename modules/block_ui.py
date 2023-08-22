@@ -11,12 +11,16 @@ plugin_info = {"name": "Blocks"}
 
 
 def initialize_session_state():
+
+
     if 'next_block_id' not in st.session_state:
         st.session_state.next_block_id = 0
     if 'looping' not in st.session_state:
         st.session_state.looping = False
     if "refresh" not in st.session_state:
-        st.session_state.refresh = False
+        st.session_state["refresh"] = False
+    if "preview" not in st.session_state:
+        st.session_state.preview = None
 
 
 def dynamic_controls(controls_config, block_id):
@@ -37,11 +41,12 @@ def dynamic_controls(controls_config, block_id):
             location = st if expose else expander
             ui_function = getattr(location, control_type)
             representation = repr(ui_function)
-            print(representation)
-            if 'progress' in representation:
-                values[control_name] = ui_function(value=0)
-            else:
-                values[control_name] = ui_function(control_name, **config['params'], key=unique_key)
+            # print(representation)
+            # if 'progress' in representation:
+            #     values[control_name] = ui_function(value=0)
+            # else:
+            #print(config)
+            values[control_name] = ui_function(control_name, **config['params'], key=unique_key)
     return values
 
 
@@ -67,12 +72,14 @@ def run_pipeline():
 
     return results
 def plugin_tab():
+
     initialize_session_state()
 
     gs.data.setdefault("pipeline", [])
     gs.data.setdefault("images", [])
 
     show_buttons = st.sidebar.checkbox("Show Control Buttons", value=True)
+    show_history = st.sidebar.checkbox("Show Image History", value=True)
 
     main_col_1, main_col_2 = st.columns(2)
 
@@ -117,16 +124,15 @@ def plugin_tab():
 
     with main_col_2:
         # Display all stored images in the third column
-        if gs.data["images"] is not None:
-            display = gs.data["images"][::-1]  # Reverse the list using slicing
-            for img in display:
-                st.image(img)
-    if st.session_state.refresh:
-        st.session_state.refresh = False
-        st.experimental_rerun()
-
+        if show_history:
+            if gs.data["images"] is not None:
+                display = gs.data["images"][::-1]  # Reverse the list using slicing
+                for img in display:
+                    st.image(img)
+        else:
+            if st.session_state.preview is not None:
+                st.image(st.session_state.preview)
     with st.sidebar:
-
         filename = st.text_input("Filename for saving", "pipeline.json")
         if st.button('Save Pipeline'):
             save_path = os.path.join('pipelines', filename)
@@ -147,8 +153,8 @@ def plugin_tab():
                 st.session_state.next_block_id = 0
                 gs.data["pipeline"].clear()
                 gs.data["pipeline"] = pipeline_data
-                st.session_state.refresh = True
-                st.experimental_rerun()
+                #st.experimental_rerun()
+                #st.session_state.refresh = True
 
         # Upload a pipeline file
         uploaded_file = st.file_uploader("Or upload a Pipeline JSON", type="json")
@@ -157,7 +163,8 @@ def plugin_tab():
             st.session_state.next_block_id = 0
             gs.data["pipeline"].clear()
             gs.data["pipeline"] = pipeline_data
-            st.session_state.refresh = True
+            #st.experimental_rerun()
+            #st.session_state.refresh = True
 
         # Display available blocks based on the last block's category
         if not gs.data["pipeline"]:
@@ -189,16 +196,17 @@ def plugin_tab():
 
         if available_blocks:
             selected_block = st.selectbox("Select a block to add", available_blocks)
-            # if 'controls' in blocks[selected_block]:
-            #     block_values = dynamic_controls(blocks[selected_block]['controls'])
-            # else:
-            #     block_values = {}
+            block_id = st.session_state.next_block_id
+            if 'controls' in blocks[selected_block]:
+                block_values = dynamic_controls(blocks[selected_block]['controls'], block_id=block_id)
+            else:
+                block_values = {}
             if st.button(f"Add {selected_block}"):
                 gs.data["pipeline"].append({
                     'name': selected_block,
                     'category': blocks[selected_block]['category'],
-                    'values': {},
-                    'block_id': st.session_state.next_block_id  # Assign a unique block_id
+                    'values': block_values,
+                    'block_id': block_id  # Assign a unique block_id
                 })
                 st.session_state.next_block_id += 1  # Increment the counter
                 st.experimental_rerun()
@@ -207,6 +215,7 @@ def plugin_tab():
         if st.button("Clear Pipeline", key="clear_pipeline_blocks"):
             gs.data["pipeline"].clear()
             st.session_state.next_block_id = 0
+            #st.session_state.refresh = True
             st.experimental_rerun()
         if st.button("Clear Images", key="clear_images_blocks"):
             gs.data["images"].clear()
@@ -217,4 +226,9 @@ def plugin_tab():
 
         if run_btn:
             results = run_pipeline()
-            st.experimental_rerun()
+            #st.experimental_rerun()
+    refresh = st.session_state.refresh
+    if refresh == True:
+         print("triggered")
+         st.session_state.refresh = False
+         st.experimental_rerun()
