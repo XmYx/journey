@@ -1,3 +1,6 @@
+import torch
+from PIL import Image
+
 from backend.block_base import register_class, BaseBlock
 from extras.block_helpers import check_args, style
 from extras.sdjourney_backend import scheduler_type_values, aspect_ratios
@@ -28,6 +31,9 @@ class SampleBlock(BaseBlock):
 
 @register_class
 class DiffusersXLLoaderBlock(BaseBlock):
+
+    name = "SD XL Loader"
+
     def __init__(self):
         super().__init__()
         self.dropdown('model_select', ["XL", "Kandinsky"])
@@ -41,6 +47,10 @@ class DiffusersXLLoaderBlock(BaseBlock):
         return data
 @register_class
 class DiffusersParamsBlock(BaseBlock):
+
+    name = "SD Parameters"
+
+
     def __init__(self):
         super().__init__()
         self.number('Steps', 25, 1, 2, 250)
@@ -57,6 +67,10 @@ class DiffusersParamsBlock(BaseBlock):
         return data
 @register_class
 class DiffusersPromptBlock(BaseBlock):
+
+    name = "SD Prompt"
+
+
     def __init__(self):
         super().__init__()
         self.text('prompt', multiline=True)
@@ -68,6 +82,10 @@ class DiffusersPromptBlock(BaseBlock):
         return data
 @register_class
 class DiffusersPromptStyleBlock(BaseBlock):
+
+    name = "SD Prompt Style"
+
+
     def __init__(self):
         super().__init__()
         self.dropdown('prompt', style_keys)
@@ -78,6 +96,10 @@ class DiffusersPromptStyleBlock(BaseBlock):
         return data
 @register_class
 class DiffusersSamplerBlock(BaseBlock):
+
+    name = "SD Sampler"
+
+
     def __init__(self):
         super().__init__()
         self.dropdown('Scheduler', scheduler_type_values)
@@ -89,6 +111,17 @@ class DiffusersSamplerBlock(BaseBlock):
         widget = self.widgets[0]
         data['scheduler'] = widget.options[widget.selected_index]
         args, pipe = check_args(data, gs.data['models']['base'])
+
+        progressbar = args.get('progressbar', None)
+
+        def callback(i, t, latents):
+            if progressbar:
+                normalized_i = i / args.get('num_inference_steps', 10)
+                progressbar.progress(normalized_i)
+            preview_latents(latents)
+
+        args["callback"] = callback
+
         result = pipe.generate(**args)
         gs.data["latents"] = result[0]
         data["result_image"] = result[1]
@@ -101,8 +134,34 @@ class DiffusersSamplerBlock(BaseBlock):
         st.session_state.images.append(result[1])
 
         return data
+
+
+def preview_latents(latents):
+    if "rgb_factor" not in gs.data:
+        gs.data["rgb_factor"] = torch.tensor([
+            #   R        G        B
+            [0.298, 0.207, 0.208],  # L1
+            [0.187, 0.286, 0.173],  # L2
+            [-0.158, 0.189, 0.264],  # L3
+            [-0.184, -0.271, -0.473],  # L4
+        ], dtype=latents.dtype, device=latents.device)
+    # for idx, latent in enumerate(latents):
+    latent_image = latents[0].permute(1, 2, 0) @ gs.data["rgb_factor"]
+
+    latents_ubyte = (((latent_image + 1) / 2)
+                     .clamp(0, 1)  # change scale from -1..1 to 0..1
+                     .mul(0xFF)  # to 0..255
+                     .byte()).cpu()
+    rgb_image = latents_ubyte.numpy()[:, :, ::-1]
+    image = Image.fromarray(rgb_image)
+    st.session_state.preview_holder.image(image, width=image.size[0] * 8)
+
 @register_class
 class DiffusersRefinerBlock(BaseBlock):
+
+    name = "SD XL Refiner"
+
+
     def __init__(self):
         super().__init__()
         self.dropdown('Scheduler', scheduler_type_values)

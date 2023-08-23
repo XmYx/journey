@@ -98,6 +98,7 @@ class BaseBlock:
     """Base class for all block types."""
 
     widgets: List[BaseWidget]
+    name: str = "Default Block Name"
 
     def __init__(self) -> None:
         """Initializes a new BaseBlock instance."""

@@ -9,14 +9,18 @@ from backend.block_classes import *
 def display_preview():
     if 'preview' in st.session_state:
         if st.session_state.preview is not None:
-            st.image(st.session_state.preview)
+            st.session_state.preview_holder = st.image(st.session_state.preview)
+        else:
+            st.session_state.preview_holder = st.empty()
 def plugin_tab():
-
     initialize()
 
     display_sidebar()
 
     col1, col2 = st.columns(2)
+    if "preview_holder" not in st.session_state:
+        with col2:
+            st.session_state.preview_holder = st.empty()
 
     display_main_button(col1)
     # Display each block with its control buttons

@@ -94,31 +94,37 @@ def display_main_button(col):
     with col:
         if st.button("Run Blocks"):
             result = run_pipeline()
+
+
 def display_block_with_controls(block, index, main_col_1):
     """Display a block's widgets along with its control buttons."""
-    #st.write(f"Displaying {block.__class__.__name__}")
 
     with main_col_1:
+        advanced = st.expander("Advanced")
+        # Use container for the box
+        with st.expander(block.name, expanded=True):
 
 
-        if not hide:
-            col1, col2, col3, col4 = st.columns([10, 1, 1, 1])
-        else:
-            col1 = main_col_1
 
-        # Display block's widgets in col1
-        with col1:
-            # Display widgets without 'expose=False' directly
-            for widget in block.widgets:
-                if not hasattr(widget, 'expose') or widget.expose:
-                    render_widget(widget)
+            if not hide:
+                col1, col2, col3, col4 = st.columns([10, 1, 1, 1])
+            else:
+                col1 = main_col_1
+
+            # Display block's widgets in col1
+            with col1:
+
+                # Display widgets without 'expose=False' directly
+                for widget in block.widgets:
+                    if not hasattr(widget, 'expose') or widget.expose:
+                        render_widget(widget)
 
             # Display widgets with 'expose=False' inside an expander
-            with st.expander("Advanced Options"):
+            with advanced:
                 for widget in block.widgets:
                     if hasattr(widget, 'expose') and not widget.expose:
                         render_widget(widget)
 
-        # Display block's control buttons in col2
-        if not hide:
-            display_nav_buttons(col2, col3, col4, index, block)
+            # Display block's control buttons in col2
+            if not hide:
+                display_nav_buttons(col2, col3, col4, index, block)
