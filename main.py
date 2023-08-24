@@ -1,5 +1,8 @@
 import subprocess
+import sys
 import time
+
+sys.path.append('CodeFormer')
 
 from extras.singleton import Singleton
 

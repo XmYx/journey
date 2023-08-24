@@ -8,7 +8,6 @@ import sys
 import numpy as np
 from PIL import Image
 
-sys.path.append('CodeFormer')
 import os
 import cv2
 import torch

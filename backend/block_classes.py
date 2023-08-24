@@ -2,7 +2,6 @@ import torch
 from PIL import Image
 
 from backend.block_base import register_class, BaseBlock
-from backend.codeformers import codeformersinference, init_codeformers
 from extras.block_helpers import check_args, style
 from extras.sdjourney_backend import scheduler_type_values, aspect_ratios
 from extras.styles import style_keys
@@ -222,6 +221,7 @@ class CodeformersBlock(BaseBlock):
     name = "Codeformers"
     def __init__(self):
         super().__init__()
+        from backend.codeformers import codeformersinference, init_codeformers
 
         init_codeformers()
 
@@ -247,6 +247,7 @@ class CodeformersBlock(BaseBlock):
             "codeformer_fidelity":0.5,
         }
 
+        from backend.codeformers import codeformersinference, init_codeformers
 
         images = [codeformersinference(**args)]
 

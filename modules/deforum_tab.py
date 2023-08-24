@@ -1,4 +1,13 @@
 # base webui import and utils.
+import json
+import random
+import secrets
+import time
+from datetime import datetime, date
+from types import SimpleNamespace
+
+import numpy as np
+import pandas as pd
 import streamlit as st
 # from ui.sd_utils import *
 
@@ -14,6 +23,12 @@ from streamlit.elements import image as STImage
 
 import os
 from io import BytesIO
+
+from deforum.animation.base_args import DeforumAnimPrompts
+from deforum.animation.new_args import ParseqArgs, LoopArgs, DeforumArgs, DeforumAnimArgs, DeforumOutputArgs
+from deforum.cmd import extract_values
+from deforum.general_utils import substitute_placeholders
+
 plugin_info = {"name": "Deforum"}
 
 try:
@@ -44,6 +59,200 @@ if os.path.exists(os.path.join(st.session_state['defaults'].general.RealESRGAN_d
     RealESRGAN_available = True
 else:
     RealESRGAN_available = False
+
+
+def get_output_folder(output_path, batch_folder):
+    out_path = os.path.join(os.getcwd(), output_path, time.strftime('%Y-%m'), str(date.today().day))
+    if batch_folder != "":
+        out_path = os.path.join(out_path, batch_folder)
+    print(f"Saving animation frames to {out_path}")
+    os.makedirs(out_path, exist_ok=True)
+    return out_path
+
+
+def get_args():
+    st.session_state["generation_mode"] = "txt2vid"
+    # SimpleNamespace = type(sys.implementation)
+
+    W, H = map(lambda x: x - x % 64,
+               (st.session_state[st.session_state["generation_mode"]]['W'],
+                st.session_state[st.session_state["generation_mode"]]['H']))  # resize to integer multiple of 64
+
+    now = datetime.now()  # current date and time
+    batch_name = now.strftime("%H_%M_%S")
+    if st.session_state[st.session_state["generation_mode"]]["pathmode"] == "subfolders":
+        out_folder = get_output_folder('./content/output', batch_name)
+    else:
+        out_folder = st.session_state[st.session_state["generation_mode"]]["outdir"]
+    if st.session_state[st.session_state["generation_mode"]]['seed'] == '':
+        st.session_state[st.session_state["generation_mode"]]['seed'] = int(random.randrange(0, 4200000000))
+    else:
+        st.session_state[st.session_state["generation_mode"]]['seed'] = int(
+            st.session_state[st.session_state["generation_mode"]]['seed'])
+    seed = int(random.randrange(0, 4200000000))
+    args = {  # 'image': st.session_state[st.session_state["generation_mode"]]['preview_image'],
+        # 'video': st.session_state[st.session_state["generation_mode"]]['preview_video'],
+        'W': W,
+        'H': H,
+        'seed': st.session_state[st.session_state["generation_mode"]]['seed'],  # @param
+        'sampler': st.session_state[st.session_state["generation_mode"]]['sampler'],
+        # @param ["klms","dpm2","dpm2_ancestral","heun","euler","euler_ancestral","plms", "ddim"]
+        'steps': st.session_state[st.session_state["generation_mode"]]['steps'],  # @param
+        'scale': st.session_state[st.session_state["generation_mode"]]['scale'],  # @param
+        'ddim_eta': st.session_state[st.session_state["generation_mode"]]['ddim_eta'],  # @param
+        'dynamic_threshold': None,
+        'static_threshold': None,
+
+        # @markdown **Save & Display Settings**
+        'save_samples': st.session_state[st.session_state["generation_mode"]]['save_samples'],
+        # @param {type:"boolean"}
+        'save_settings': st.session_state[st.session_state["generation_mode"]]['save_settings'],
+        # @param {type:"boolean"}
+        'display_samples': st.session_state[st.session_state["generation_mode"]]['display_samples'],
+        # @param {type:"boolean"}
+
+        # @markdown **Batch Settings**
+        'n_batch': st.session_state[st.session_state["generation_mode"]]["iterations"],  # @param
+        'batch_name': batch_name,  # @param {type:"string"}
+        'filename_format': st.session_state[st.session_state["generation_mode"]]['filename_format'],
+        # @param ["{timestring}_{index}_{seed}.png","{timestring}_{index}_{prompt}.png"]
+        'seed_behavior': st.session_state[st.session_state["generation_mode"]]['seed_behavior'],
+        # @param ["iter","fixed","random"]
+        'make_grid': st.session_state[st.session_state["generation_mode"]]['make_grid'],  # @param {type:"boolean"}
+        'grid_rows': st.session_state[st.session_state["generation_mode"]]['grid_rows'],  # @param
+        'outdir': out_folder,
+
+        # @markdown **Init Settings**
+        'use_init': st.session_state[st.session_state["generation_mode"]]['use_init'],  # @param {type:"boolean"}
+        'strength': st.session_state[st.session_state["generation_mode"]]['strength'],  # @param {type:"number"}
+        'strength_0_no_init': st.session_state[st.session_state["generation_mode"]]['strength_0_no_init'],
+        # Set the strength to 0 automatically when no init image is used
+        'init_image': st.session_state[st.session_state["generation_mode"]]['init_image'],  # @param {type:"string"}
+        # Whiter areas of the mask are areas that change more
+        'use_mask': st.session_state[st.session_state["generation_mode"]]['use_mask'],  # @param {type:"boolean"}
+        'use_alpha_as_mask': st.session_state[st.session_state["generation_mode"]]['use_alpha_as_mask'],
+        # use the alpha channel of the init image as the mask
+        'mask_file': st.session_state[st.session_state["generation_mode"]]['mask_file'],  # @param {type:"string"}
+        'invert_mask': st.session_state[st.session_state["generation_mode"]]['invert_mask'],  # @param {type:"boolean"}
+        # Adjust mask image, 1.0 is no adjustment. Should be positive numbers.
+        'mask_brightness_adjust': st.session_state[st.session_state["generation_mode"]]['mask_brightness_adjust'],
+        # @param {type:"number"}
+        'mask_contrast_adjust': st.session_state[st.session_state["generation_mode"]]['mask_contrast_adjust'],
+        # @param {type:"number"}
+
+        'n_samples': st.session_state[st.session_state["generation_mode"]]["batch_size"],
+        'precision': 'autocast',
+        'C': 4,
+        'f': 8,
+
+        'keyframes': st.session_state[st.session_state["generation_mode"]]['keyframes'],
+        'prompt': st.session_state[st.session_state["generation_mode"]]['prompt'],
+
+        'timestring': "",
+        'init_latent': None,
+        'init_sample': None,
+        'init_c': None,
+    }
+
+    if st.session_state["generation_mode"] == "txt2img":
+        anim_args = {
+            'animation_mode': None
+
+        }
+    else:
+
+        anim_args = {'animation_mode': st.session_state[st.session_state["generation_mode"]]['animation_mode'],
+                           # @param ['None', '2D', '3D', 'Video Input', 'Interpolation'] {type:'string'}
+                           'max_frames': st.session_state[st.session_state["generation_mode"]]['max_frames'],
+                           # @param {type:"number"}
+                           'border': st.session_state[st.session_state["generation_mode"]]['border'],
+                           # @param ['wrap', 'replicate'] {type:'string'}
+
+                           # @markdown ####**Motion Parameters:**
+                           'angle': st.session_state[st.session_state["generation_mode"]]['angle'],
+                           # @param {type:"string"}
+                           'zoom': st.session_state[st.session_state["generation_mode"]]['zoom'],
+                           # @param {type:"string"}
+                           'translation_x': st.session_state[st.session_state["generation_mode"]]['translation_x'],
+                           # @param {type:"string"}
+                           'translation_y': st.session_state[st.session_state["generation_mode"]]['translation_y'],
+                           # @param {type:"string"}
+                           'translation_z': st.session_state[st.session_state["generation_mode"]]['translation_z'],
+                           # @param {type:"string"}
+                           'rotation_3d_x': st.session_state[st.session_state["generation_mode"]]['rotation_3d_x'],
+                           # @param {type:"string"}
+                           'rotation_3d_y': st.session_state[st.session_state["generation_mode"]]['rotation_3d_y'],
+                           # @param {type:"string"}
+                           'rotation_3d_z': st.session_state[st.session_state["generation_mode"]]['rotation_3d_z'],
+                           # @param {type:"string"}
+                           'noise_schedule': st.session_state[st.session_state["generation_mode"]]['noise_schedule'],
+                           # @param {type:"string"}
+                           'flip_2d_perspective': st.session_state[st.session_state["generation_mode"]][
+                               'flip_2d_perspective'],  # @param {type:"boolean"}
+                           'perspective_flip_theta': st.session_state[st.session_state["generation_mode"]][
+                               'perspective_flip_theta'],
+                           # @param {type:"string"}
+                           'perspective_flip_phi': st.session_state[st.session_state["generation_mode"]][
+                               'perspective_flip_phi'],  # @param {type:"string"}
+                           'perspective_flip_gamma': st.session_state[st.session_state["generation_mode"]][
+                               'perspective_flip_gamma'],
+                           # @param {type:"string"}
+                           'perspective_flip_fv': st.session_state[st.session_state["generation_mode"]][
+                               'perspective_flip_fv'],  # @param {type:"string"}
+                           'strength_schedule': st.session_state[st.session_state["generation_mode"]][
+                               'strength_schedule'],  # @param {type:"string"}
+                           'contrast_schedule': st.session_state[st.session_state["generation_mode"]][
+                               'contrast_schedule'],  # @param {type:"string"}
+
+                           # @markdown ####**Coherence:**
+                           'color_coherence': st.session_state[st.session_state["generation_mode"]]['color_coherence'],
+                           # @param ['None', 'Match Frame 0 HSV', 'Match Frame 0 LAB', 'Match Frame 0 RGB'] {type:'string'}
+                           'diffusion_cadence': st.session_state[st.session_state["generation_mode"]][
+                               'diffusion_cadence'],
+                           # @param ['1','2','3','4','5','6','7','8'] {type:'string'}
+
+                           # @markdown ####**3D Depth Warping:**
+                           'use_depth_warping': st.session_state[st.session_state["generation_mode"]][
+                               'use_depth_warping'],  # @param {type:"boolean"}
+                           'midas_weight': st.session_state[st.session_state["generation_mode"]]['midas_weight'],
+                           # @param {type:"number"}
+                           'near_plane': st.session_state[st.session_state["generation_mode"]]['near_plane'],
+                           'far_plane': st.session_state[st.session_state["generation_mode"]]['far_plane'],
+                           'fov': st.session_state[st.session_state["generation_mode"]]['fov'],
+                           # @param {type:"number"}
+                           'padding_mode': st.session_state[st.session_state["generation_mode"]]['padding_mode'],
+                           # @param ['border', 'reflection', 'zeros'] {type:'string'}
+                           'sampling_mode': st.session_state[st.session_state["generation_mode"]]['sampling_mode'],
+                           # @param ['bicubic', 'bilinear', 'nearest'] {type:'string'}
+                           'save_depth_maps': st.session_state[st.session_state["generation_mode"]]['save_depth_maps'],
+                           # @param {type:"boolean"}
+
+                           # @markdown ####**Video Input:**
+                           'video_init_path': st.session_state[st.session_state["generation_mode"]]['video_init_path'],
+                           # @param {type:"string"}
+                           'extract_nth_frame': st.session_state[st.session_state["generation_mode"]][
+                               'extract_nth_frame'],  # @param {type:"number"}
+
+                           # @markdown ####**Interpolation:**
+                           'interpolate_key_frames': st.session_state[st.session_state["generation_mode"]][
+                               'interpolate_key_frames'],
+                           # @param {type:"boolean"}
+                           'interpolate_x_frames': st.session_state[st.session_state["generation_mode"]][
+                               'interpolate_x_frames'],  # @param {type:"number"}
+
+                           # @markdown ####**Resume Animation:**
+                           'resume_from_timestring': st.session_state[st.session_state["generation_mode"]][
+                               'resume_from_timestring'],
+                           # @param {type:"boolean"}
+                           'resume_timestring': st.session_state[st.session_state["generation_mode"]][
+                               'resume_timestring']  # @param {type:"string"}
+
+                           }
+
+    # args = SimpleNamespace(**DeforumArgs)
+    # anim_args = SimpleNamespace(**DeforumAnimArgs)
+
+    return args, anim_args
 
 
 #
@@ -299,4 +508,74 @@ def plugin_tab(tabs, tab_names):
                 st.session_state["txt2vid"]["iterations"] = 1
                 st.session_state["txt2vid"]["batch_size"] = 1
                 if generate_button:
-                    print("deforum")
+                    from types import SimpleNamespace
+                    from deforum.animation.new_args import RootArgs
+                    from deforum.main import Deforum
+
+
+
+                    args = extract_values(DeforumArgs())
+                    anim_args = extract_values(DeforumAnimArgs())
+                    ui_args, ui_anim_args = get_args()
+
+                    args.update(ui_args)
+                    anim_args.update(ui_anim_args)
+
+                    args = SimpleNamespace(**args)
+                    anim_args = SimpleNamespace(**anim_args)
+                    print(args.prompt)
+
+                    # expand prompts out to per-frame
+                    prompt_series = pd.Series([np.nan for a in range(anim_args.max_frames)])
+
+                    if args.keyframes == '':
+                        args.keyframes = "0"
+                    prom = args.prompt
+                    key = args.keyframes
+
+                    new_prom = list(prom.split("\n"))
+                    new_key = list(key.split("\n"))
+
+                    prompts = dict(zip(new_key, new_prom))
+
+                    # for i in animation_prompts:
+                    #    prompt_series[i] = animation_prompts
+                    #    print(prompt_series[i])
+
+                    for i, prompt in prompts.items():
+                        n = int(i)
+                        prompt_series[n] = prompt
+                    prompt_series = prompt_series.ffill().bfill()
+
+                    print(prompt_series)
+                    parseg_args = SimpleNamespace(**extract_values(ParseqArgs()))
+                    loop_args = SimpleNamespace(**extract_values(LoopArgs()))
+                    root = SimpleNamespace(**RootArgs())
+                    video_args = SimpleNamespace(**extract_values(DeforumOutputArgs()))
+                    controlnet_args = None
+                    deforum = Deforum(args, anim_args, video_args, parseg_args, loop_args, controlnet_args, root)
+                    setattr(deforum.loop_args, "init_images", "")
+                    #animation_prompts = DeforumAnimPrompts()
+                    #deforum.root.animation_prompts = json.loads(animation_prompts)
+                    #deforum.animation_prompts = deforum.root.animation_prompts
+
+                    deforum.root.animation_prompts = prompt_series
+                    deforum.animation_prompts = prompt_series
+
+
+                    deforum.args.timestring = time.strftime('%Y%m%d%H%M%S')
+                    current_arg_list = [deforum.args, deforum.anim_args, deforum.video_args, deforum.parseq_args]
+                    full_base_folder_path = os.path.join(os.getcwd(), "output/deforum")
+                    deforum.root.raw_batch_name = deforum.args.batch_name
+                    deforum.args.batch_name = substitute_placeholders(deforum.args.batch_name, current_arg_list,
+                                                                      full_base_folder_path)
+                    deforum.args.outdir = os.path.join(full_base_folder_path, str(deforum.args.batch_name))
+                    if deforum.args.seed == -1 or deforum.args.seed == "-1":
+                        setattr(deforum.args, "seed", secrets.randbelow(999999999999999999))
+                        setattr(deforum.root, "raw_seed", int(deforum.args.seed))
+                        setattr(deforum.args, "seed_internal", 0)
+                    else:
+                        deforum.args.seed = int(deforum.args.seed)
+                    success = deforum()
+
+                    print("deforum ran successfully")
