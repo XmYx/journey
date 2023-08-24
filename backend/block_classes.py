@@ -2,6 +2,7 @@ import torch
 from PIL import Image
 
 from backend.block_base import register_class, BaseBlock
+from backend.codeformers import codeformersinference
 from extras.block_helpers import check_args, style
 from extras.sdjourney_backend import scheduler_type_values, aspect_ratios
 from extras.styles import style_keys
@@ -190,6 +191,41 @@ class DiffusersRefinerBlock(BaseBlock):
         if "images" not in st.session_state:
             st.session_state.images = []
 
+        st.session_state.images.append(images)
+
+        return data
+@register_class
+class CodeformersBlock(BaseBlock):
+    name = "Codeformers"
+    def __init__(self):
+        super().__init__()
+        self.checkbox('Align Faces', True)
+        self.checkbox('Enhance Background', True)
+        self.checkbox('Upsample Faces', True)
+        self.number('Upscale', 2, 1, 1, 4)
+        self.number('Fidelity', 0.5, 0.01, 0.1, 1.0)
+    def fn(self, data: dict) -> dict:
+        if st.session_state.preview is not None:
+            img = st.session_state.preview
+        img = data.get('result_image', st.session_state.preview)
+
+        if isinstance(img, list):
+            img = img[0]
+
+        args = {
+            "image":img,
+            "face_align":True,
+            "background_enhance":True,
+            "face_upsample":True,
+            "upscale":4,
+            "codeformer_fidelity":0.5,
+        }
+
+
+        images = [codeformersinference(**args)]
+
+        data["result_image"] = images
+        st.session_state.preview = images[0]
         st.session_state.images.append(images)
 
         return data

@@ -39,6 +39,7 @@ def plugin_tab():
     # If there's no start_index in the session state, initialize it to 0
     if "start_index" not in st.session_state:
         st.session_state.start_index = 0
+    buttons = {}
     if num_columns > 0:
         # Create the columns
         image_columns = st.columns(num_columns)
@@ -48,7 +49,12 @@ def plugin_tab():
             if idx + st.session_state.start_index < num_images:
                 col.image(st.session_state.images[
                               idx + st.session_state.start_index], width=256)  # Replace with your method of displaying images
+                with col:
+                    buttons[idx] = st.button("View Image", key=f"preview_button_{idx}")
 
+                    if buttons[idx]:
+                        st.session_state.preview_holder.image(st.session_state.images[
+                                  idx + st.session_state.start_index])
         # Step through images
         left, _, right = st.columns([1, 6, 1])
         if left.button("←") and st.session_state.start_index > 0:
