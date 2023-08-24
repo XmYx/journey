@@ -10,9 +10,15 @@ from deforum.general_utils import pairwise_repl, isJson
 from extras.block_helpers import check_args
 from main import singleton as gs
 import streamlit as st
+from diffusers import StableDiffusionXLImg2ImgPipeline
+
+
 
 def generate_with_block(prompt, next_prompt, blend_value, negative_prompt, args, root, frame, init_images=None):
+    if "base" not in gs.data["models"]:
+        from modules.sdjourney_tab import load_pipeline
 
+        load_pipeline("XL")
     gen_args = {
         "prompt":prompt,
         "negative_prompt":negative_prompt,
@@ -21,7 +27,25 @@ def generate_with_block(prompt, next_prompt, blend_value, negative_prompt, args,
         "scheduler":"ddim"
     }
 
-    gen_args, pipe = check_args(gen_args, gs.data["models"]["base"])
+    print("init images", init_images)
+
+    if init_images[0] is not None:
+        if "img2img" not in gs.data["models"]:
+            gs.data["models"]["img2img"] = StableDiffusionXLImg2ImgPipeline(vae=gs.data["models"]["base"].vae,
+                                                                            text_encoder=gs.data["models"]["base"].text_encoder,
+                                                                            text_encoder_2=gs.data["models"]["base"].text_encoder_2,
+                                                                            unet=gs.data["models"]["base"].unet,
+                                                                            tokenizer=gs.data["models"]["base"].tokenizer,
+                                                                            tokenizer_2 = gs.data["models"]["base"].tokenizer_2,
+                                                                            scheduler=gs.data["models"]["base"].scheduler)
+
+
+        gen_args, pipe = check_args(gen_args, gs.data["models"]["img2img"])
+
+        gen_args["image"] = init_images[0]
+        gen_args["strength"] = args.strength
+    else:
+        gen_args, pipe = check_args(gen_args, gs.data["models"]["base"])
 
     if pipe.device.type != 'cuda':
         pipe.to('cuda')
