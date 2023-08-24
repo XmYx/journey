@@ -168,7 +168,7 @@ def preview_latents(latents):
 def inpaint_image(image, mask):
     return image
 
-def plugin_tab():
+def plugin_tab(tabs, tab_names):
     # # Specify canvas parameters in application
     # drawing_mode = st.sidebar.selectbox(
     #     "Drawing tool:", ("point", "freedraw", "line", "rect", "circle", "transform")

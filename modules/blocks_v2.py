@@ -12,10 +12,12 @@ def display_preview():
             st.session_state.preview_holder = st.image(st.session_state.preview)
         else:
             st.session_state.preview_holder = st.empty()
-def plugin_tab():
+def plugin_tab(tab, tab_names):
     initialize()
 
-    display_sidebar()
+
+    if tab_names[tab] == "Blocks v2":
+         display_sidebar()
 
     col1, col2 = st.columns(2)
     if "preview_holder" not in st.session_state:

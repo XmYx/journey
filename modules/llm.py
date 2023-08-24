@@ -23,7 +23,7 @@ def generate_response(user_input, temperature, top_p):
         do_sample=True,
     )
     return tokenizer.decode(tokens[0], skip_special_tokens=True)
-def plugin_tab():
+def plugin_tab(tabs, tab_names):
     # Streamlit UI
     st.title('Chat with StableLM')
     user_input = st.text_area("You: ", "")

@@ -47,7 +47,7 @@ else:
 
 
 #
-def plugin_tab():
+def plugin_tab(tabs, tab_names):
     #def_runner = runner()
 
     with st.form("txt2vid-deforum"):

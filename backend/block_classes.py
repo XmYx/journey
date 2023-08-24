@@ -136,6 +136,12 @@ class DiffusersSamplerBlock(BaseBlock):
             if "images" not in st.session_state:
                 st.session_state.images = []
             st.session_state.images.append(result[1])
+            if len(st.session_state['images']) > 8:
+                if len(st.session_state['start_index']) < 8:
+                    st.session_state.start_index = 8
+                else:
+                    st.session_state.start_index += 1
+
         else:
             args['output_type'] = 'latent'
             result = pipe(**args).images
@@ -205,7 +211,11 @@ class DiffusersRefinerBlock(BaseBlock):
             st.session_state.images = []
 
         st.session_state.images.append(images)
-
+        if len(st.session_state['images']) > 8:
+            if len(st.session_state['start_index']) < 8:
+                st.session_state.start_index = 8
+            else:
+                st.session_state.start_index += 1
         return data
 @register_class
 class CodeformersBlock(BaseBlock):
@@ -243,7 +253,11 @@ class CodeformersBlock(BaseBlock):
         data["result_image"] = images
         st.session_state.preview = images[0]
         st.session_state.images.append(images)
-
+        if len(st.session_state['images']) > 8:
+            if len(st.session_state['start_index']) < 8:
+                st.session_state.start_index = 8
+            else:
+                st.session_state.start_index += 1
         return data
 
 

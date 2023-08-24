@@ -61,10 +61,11 @@ def main():
 
     # Create tabs for each module
     tabs = st.tabs(tab_names)
-
+    x = 0
     for module_name, tab in zip(modules.keys(), tabs):
         with tab:
-            modules[module_name].plugin_tab()
+            modules[module_name].plugin_tab(x, tab_names)
+        x += 1
 
 main()
 

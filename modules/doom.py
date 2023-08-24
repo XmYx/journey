@@ -2,7 +2,7 @@ import streamlit as st
 
 plugin_info = {"name": "Doom"}
 
-def plugin_tab():
+def plugin_tab(tabs, tab_names):
     select = st.selectbox('What', ['doom', 'auto', 'custom'])
     if select == 'doom':
         src = "https://www.retrogames.cz/play_414-DOS.php"

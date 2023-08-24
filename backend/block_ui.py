@@ -13,6 +13,8 @@ def initialize():
         gs.data["added_blocks"] = []
     if 'images' not in st.session_state:
         st.session_state.images = []
+import os
+
 def display_sidebar():
     # Sidebar UI
     st.sidebar.title("Add Blocks")
@@ -24,14 +26,25 @@ def display_sidebar():
                                     None)
         if selected_block_class:
             gs.data['added_blocks'].append(selected_block_class())
-    if st.sidebar.button("Save to JSON"):
-        save_to_json("pipeline.json")
-        st.write("Saved pipeline to pipeline.json")
+
+    # # Button to save current pipeline to default file
+    # if st.sidebar.button("Save to JSON"):
+    #     save_to_json("pipeline.json")
+    #     st.write("Saved pipeline to pipeline.json")
+
+    # Button and input field to save current pipeline to a new file
+    save_as_filename = st.sidebar.text_input("Save As Filename:", value="new_pipeline.json")
+    if st.sidebar.button("Save As"):
+        save_to_json(os.path.join("pipelines", save_as_filename))
+        st.write(f"Saved pipeline to {save_as_filename}")
+
+    # Dropdown to select from available json files in pipelines directory
+    json_files = [f for f in os.listdir("pipelines") if f.endswith('.json')]
+    selected_file = st.sidebar.selectbox("Choose a JSON file to load:", json_files)
 
     if st.sidebar.button("Load from JSON"):
-        load_from_json("pipeline.json")
-        #gs.data['added_blocks'] = block_holder.blocks
-        st.write("Loaded pipeline from pipeline.json")
+        load_from_json(os.path.join("pipelines", selected_file))
+        st.write(f"Loaded pipeline from {selected_file}")
         st.experimental_rerun()
 
     global hide
