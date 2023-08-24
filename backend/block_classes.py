@@ -38,7 +38,7 @@ class DiffusersXLLoaderBlock(BaseBlock):
         super().__init__()
         self.dropdown('model_select', ["XL", "Kandinsky"])
     def fn(self, data: dict) -> dict:
-        from modules.sdjourney import load_pipeline
+        from modules.sdjourney_tab import load_pipeline
 
         selection = self.widgets[0].selected_index
         selection = self.widgets[0].options[selection]
@@ -166,7 +166,7 @@ def preview_latents(latents):
                      .byte()).cpu()
     rgb_image = latents_ubyte.numpy()[:, :, ::-1]
     image = Image.fromarray(rgb_image)
-    st.session_state.preview_holder.image(image, width=image.size[0] * 8)
+    st.session_state.preview_holder.image(image)
 
 @register_class
 class DiffusersRefinerBlock(BaseBlock):

@@ -29,13 +29,12 @@ plugin_info = {"name": "SDJourney"}
 
 ON = True
 OFF = False
+global lowvram
 
 lowvram = OFF
 
 def generate(args, callback):
     target_device = "cuda"
-    from modules.sdjourney import lowvram
-
     if not lowvram:
         if gs.data["models"]["base"].device.type != target_device:
             gs.data["models"]["base"].to(target_device)
@@ -53,7 +52,6 @@ def generate(args, callback):
 
 
 def process(image, args, callback):
-    from modules.sdjourney import lowvram
 
     if not lowvram:
         gs.data["models"]["refiner"].to("cuda")
@@ -97,7 +95,6 @@ def load_pipeline(model_choice):
 
             base_pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
             # base_pipe.vae = AutoencoderTiny.from_pretrained("madebyollin/taesdxl", torch_dtype=torch.float16).to("cuda")
-            from modules.sdjourney import lowvram
 
             if lowvram:
                 base_pipe.enable_model_cpu_offload()
@@ -121,7 +118,6 @@ def load_pipeline(model_choice):
             gs.data["models"]["base"] = pipe
             print("Kandinsky loaded")
         if 'refiner' not in gs.data['models']:
-            from modules.sdjourney import lowvram
 
             refiner_pipe = DiffusionPipeline.from_pretrained(
                 "stabilityai/stable-diffusion-xl-refiner-1.0",
