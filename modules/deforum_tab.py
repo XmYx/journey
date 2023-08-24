@@ -24,6 +24,7 @@ from streamlit.elements import image as STImage
 import os
 from io import BytesIO
 
+from backend.deforum_adapter import generate_inner
 from deforum.animation.base_args import DeforumAnimPrompts
 from deforum.animation.new_args import ParseqArgs, LoopArgs, DeforumArgs, DeforumAnimArgs, DeforumOutputArgs
 from deforum.cmd import extract_values
@@ -576,6 +577,9 @@ def plugin_tab(tabs, tab_names):
                         setattr(deforum.args, "seed_internal", 0)
                     else:
                         deforum.args.seed = int(deforum.args.seed)
+                    deforum.generate = generate_inner
+
+
                     success = deforum()
 
                     print("deforum ran successfully")
