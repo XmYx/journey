@@ -3,12 +3,11 @@ import streamlit as st
 from backend.block_base import save_to_json, load_from_json, AVAILABLE_BLOCKS
 from main import singleton as gs
 
-def run_pipeline():
+def run_pipeline(start_index=0):
     cumulative_data = {}
-    for block in gs.data['added_blocks']:
+    for block in gs.data['added_blocks'][start_index:]:
         cumulative_data = block.fn(cumulative_data)
     return cumulative_data
-
 def initialize():
     if "added_blocks" not in gs.data:
         gs.data["added_blocks"] = []
@@ -60,7 +59,7 @@ def render_widget(widget):
         widget.value = st.multiselect(widget.name, options=widget.options, default=widget.value, key=widget.uid)
 
 
-def display_nav_buttons(col2, col3, col4, index, block):
+def display_nav_buttons(col2, col3, col4, col5, index, block):
     # Create buttons for moving up, moving down, and deleting
     move_up = False if index == 0 else True  # Disable for the first block
     move_down = False if index == len(gs.data['added_blocks']) - 1 else True  # Disable for the last block
@@ -90,6 +89,9 @@ def display_nav_buttons(col2, col3, col4, index, block):
         if st.button("✖", key=f"delete_{block.uid}", help="Delete block"):
             del gs.data['added_blocks'][index]
             st.experimental_rerun()
+    with col5:
+        if st.button("▶", key=f"run_from_{block.uid}"):
+            run_pipeline(start_index=index)
 def display_main_button(col):
     with col:
         if st.button("Run Blocks"):
@@ -99,6 +101,8 @@ def display_main_button(col):
 def display_block_with_controls(block, index, main_col_1):
     """Display a block's widgets along with its control buttons."""
 
+    block.index = index
+
     with main_col_1:
         advanced = st.expander("Advanced")
         # Use container for the box
@@ -107,7 +111,7 @@ def display_block_with_controls(block, index, main_col_1):
 
 
             if not hide:
-                col1, col2, col3, col4 = st.columns([10, 1, 1, 1])
+                col1, col2, col3, col4, col5 = st.columns([10, 1, 1, 1, 1])
             else:
                 col1 = main_col_1
 
@@ -127,4 +131,4 @@ def display_block_with_controls(block, index, main_col_1):
 
             # Display block's control buttons in col2
             if not hide:
-                display_nav_buttons(col2, col3, col4, index, block)
+                display_nav_buttons(col2, col3, col4, col5, index, block)

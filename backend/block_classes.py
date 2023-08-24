@@ -2,7 +2,7 @@ import torch
 from PIL import Image
 
 from backend.block_base import register_class, BaseBlock
-from backend.codeformers import codeformersinference
+from backend.codeformers import codeformersinference, init_codeformers
 from extras.block_helpers import check_args, style
 from extras.sdjourney_backend import scheduler_type_values, aspect_ratios
 from extras.styles import style_keys
@@ -104,36 +104,42 @@ class DiffusersSamplerBlock(BaseBlock):
     def __init__(self):
         super().__init__()
         self.dropdown('Scheduler', scheduler_type_values)
+        self.checkbox('Force full sample')
     def fn(self, data: dict) -> dict:
-
+        if hasattr(self, 'index'):
+            print("Block Index", self.index)
+            print("Block Amount", len(gs.data['added_blocks']))
         target_device = "cuda"
         if gs.data["models"]["base"].device.type != target_device:
             gs.data["models"]["base"].to(target_device)
         widget = self.widgets[0]
         data['scheduler'] = widget.options[widget.selected_index]
         args, pipe = check_args(data, gs.data['models']['base'])
-
-        progressbar = args.get('progressbar', None)
-
+        progressbar = False
         def callback(i, t, latents):
             if progressbar:
                 normalized_i = i / args.get('num_inference_steps', 10)
                 progressbar.progress(normalized_i)
             preview_latents(latents)
-
         args["callback"] = callback
+        show_image = self.widgets[1].value
+        # if hasattr(self, 'index'):
+        #     show_image = self.index + 1 == len(gs.data['added_blocks'])
 
-        result = pipe.generate(**args)
-        gs.data["latents"] = result[0]
-        data["result_image"] = result[1]
+        print("Show Image", show_image)
 
-        st.session_state.preview = result[1][0]
-
-        if "images" not in st.session_state:
-            st.session_state.images = []
-
-        st.session_state.images.append(result[1])
-
+        if show_image:
+            result = pipe.generate(**args)
+            gs.data["latents"] = result[0]
+            data["result_image"] = result[1]
+            st.session_state.preview = result[1][0]
+            if "images" not in st.session_state:
+                st.session_state.images = []
+            st.session_state.images.append(result[1])
+        else:
+            args['output_type'] = 'latent'
+            result = pipe(**args).images
+            gs.data["latents"] = result
         return data
 
 
@@ -174,6 +180,13 @@ class DiffusersRefinerBlock(BaseBlock):
         widget = self.widgets[0]
         data['scheduler'] = widget.options[widget.selected_index]
         args, pipe = check_args(data, gs.data['models']['refiner'])
+        progressbar = False
+        def callback(i, t, latents):
+            if progressbar:
+                normalized_i = i / args.get('num_inference_steps', 10)
+                progressbar.progress(normalized_i)
+            preview_latents(latents)
+        args["callback"] = callback
 
         latents = gs.data.get('latents')
         images = []
@@ -199,6 +212,9 @@ class CodeformersBlock(BaseBlock):
     name = "Codeformers"
     def __init__(self):
         super().__init__()
+
+        init_codeformers()
+
         self.checkbox('Align Faces', True)
         self.checkbox('Enhance Background', True)
         self.checkbox('Upsample Faces', True)

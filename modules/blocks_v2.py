@@ -63,4 +63,3 @@ def plugin_tab():
         if right.button("→") and st.session_state.start_index + num_columns < num_images:
             st.session_state.start_index += 1  # Move the images to the right
 
-        st.write("test")

@@ -22,47 +22,65 @@ from facelib.utils.face_restoration_helper import FaceRestoreHelper
 from facelib.utils.misc import is_gray
 from basicsr.archs.rrdbnet_arch import RRDBNet
 from basicsr.utils.realesrgan_utils import RealESRGANer
-
 from basicsr.utils.registry import ARCH_REGISTRY
 
 
-os.system("pip freeze")
 
-pretrain_model_url = {
-    'codeformer': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/codeformer.pth',
-    'detection': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/detection_Resnet50_Final.pth',
-    'parsing': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/parsing_parsenet.pth',
-    'realesrgan': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/RealESRGAN_x2plus.pth'
-}
-# download weights
-if not os.path.exists('CodeFormer/weights/CodeFormer/codeformer.pth'):
-    load_file_from_url(url=pretrain_model_url['codeformer'], model_dir='CodeFormer/weights/CodeFormer', progress=True, file_name=None)
-if not os.path.exists('CodeFormer/weights/facelib/detection_Resnet50_Final.pth'):
-    load_file_from_url(url=pretrain_model_url['detection'], model_dir='CodeFormer/weights/facelib', progress=True, file_name=None)
-if not os.path.exists('CodeFormer/weights/facelib/parsing_parsenet.pth'):
-    load_file_from_url(url=pretrain_model_url['parsing'], model_dir='CodeFormer/weights/facelib', progress=True, file_name=None)
-if not os.path.exists('CodeFormer/weights/realesrgan/RealESRGAN_x2plus.pth'):
-    load_file_from_url(url=pretrain_model_url['realesrgan'], model_dir='CodeFormer/weights/realesrgan', progress=True, file_name=None)
+def init_codeformers():
+    global upsampler
+    global codeformer_net
+    global device
+    os.system("pip freeze")
 
-# download images
-torch.hub.download_url_to_file(
-    'https://replicate.com/api/models/sczhou/codeformer/files/fa3fe3d1-76b0-4ca8-ac0d-0a925cb0ff54/06.png',
-    '01.png')
-torch.hub.download_url_to_file(
-    'https://replicate.com/api/models/sczhou/codeformer/files/a1daba8e-af14-4b00-86a4-69cec9619b53/04.jpg',
-    '02.jpg')
-torch.hub.download_url_to_file(
-    'https://replicate.com/api/models/sczhou/codeformer/files/542d64f9-1712-4de7-85f7-3863009a7c3d/03.jpg',
-    '03.jpg')
-torch.hub.download_url_to_file(
-    'https://replicate.com/api/models/sczhou/codeformer/files/a11098b0-a18a-4c02-a19a-9a7045d68426/010.jpg',
-    '04.jpg')
-torch.hub.download_url_to_file(
-    'https://replicate.com/api/models/sczhou/codeformer/files/7cf19c2c-e0cf-4712-9af8-cf5bdbb8d0ee/012.jpg',
-    '05.jpg')
-torch.hub.download_url_to_file(
-    'https://raw.githubusercontent.com/sczhou/CodeFormer/master/inputs/cropped_faces/0729.png',
-    '06.png')
+    pretrain_model_url = {
+        'codeformer': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/codeformer.pth',
+        'detection': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/detection_Resnet50_Final.pth',
+        'parsing': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/parsing_parsenet.pth',
+        'realesrgan': 'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/RealESRGAN_x2plus.pth'
+    }
+    # download weights
+    if not os.path.exists('CodeFormer/weights/CodeFormer/codeformer.pth'):
+        load_file_from_url(url=pretrain_model_url['codeformer'], model_dir='CodeFormer/weights/CodeFormer', progress=True, file_name=None)
+    if not os.path.exists('CodeFormer/weights/facelib/detection_Resnet50_Final.pth'):
+        load_file_from_url(url=pretrain_model_url['detection'], model_dir='CodeFormer/weights/facelib', progress=True, file_name=None)
+    if not os.path.exists('CodeFormer/weights/facelib/parsing_parsenet.pth'):
+        load_file_from_url(url=pretrain_model_url['parsing'], model_dir='CodeFormer/weights/facelib', progress=True, file_name=None)
+    if not os.path.exists('CodeFormer/weights/realesrgan/RealESRGAN_x2plus.pth'):
+        load_file_from_url(url=pretrain_model_url['realesrgan'], model_dir='CodeFormer/weights/realesrgan', progress=True, file_name=None)
+
+    # download images
+    torch.hub.download_url_to_file(
+        'https://replicate.com/api/models/sczhou/codeformer/files/fa3fe3d1-76b0-4ca8-ac0d-0a925cb0ff54/06.png',
+        '01.png')
+    torch.hub.download_url_to_file(
+        'https://replicate.com/api/models/sczhou/codeformer/files/a1daba8e-af14-4b00-86a4-69cec9619b53/04.jpg',
+        '02.jpg')
+    torch.hub.download_url_to_file(
+        'https://replicate.com/api/models/sczhou/codeformer/files/542d64f9-1712-4de7-85f7-3863009a7c3d/03.jpg',
+        '03.jpg')
+    torch.hub.download_url_to_file(
+        'https://replicate.com/api/models/sczhou/codeformer/files/a11098b0-a18a-4c02-a19a-9a7045d68426/010.jpg',
+        '04.jpg')
+    torch.hub.download_url_to_file(
+        'https://replicate.com/api/models/sczhou/codeformer/files/7cf19c2c-e0cf-4712-9af8-cf5bdbb8d0ee/012.jpg',
+        '05.jpg')
+    torch.hub.download_url_to_file(
+        'https://raw.githubusercontent.com/sczhou/CodeFormer/master/inputs/cropped_faces/0729.png',
+        '06.png')
+    upsampler = set_realesrgan()
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    codeformer_net = ARCH_REGISTRY.get("CodeFormer")(
+        dim_embd=512,
+        codebook_size=1024,
+        n_head=8,
+        n_layers=9,
+        connect_list=["32", "64", "128", "256"],
+    ).to(device)
+    ckpt_path = "CodeFormer/weights/CodeFormer/codeformer.pth"
+    checkpoint = torch.load(ckpt_path)["params_ema"]
+    codeformer_net.load_state_dict(checkpoint)
+    codeformer_net.eval()
+    os.makedirs('output', exist_ok=True)
 
 def imread(img_path):
     img = cv2.imread(img_path)
@@ -91,21 +109,6 @@ def set_realesrgan():
     )
     return upsampler
 
-upsampler = set_realesrgan()
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-codeformer_net = ARCH_REGISTRY.get("CodeFormer")(
-    dim_embd=512,
-    codebook_size=1024,
-    n_head=8,
-    n_layers=9,
-    connect_list=["32", "64", "128", "256"],
-).to(device)
-ckpt_path = "CodeFormer/weights/CodeFormer/codeformer.pth"
-checkpoint = torch.load(ckpt_path)["params_ema"]
-codeformer_net.load_state_dict(checkpoint)
-codeformer_net.eval()
-
-os.makedirs('output', exist_ok=True)
 
 def codeformersinference(image, face_align, background_enhance, face_upsample, upscale, codeformer_fidelity):
     """Run a single prediction on the model"""
