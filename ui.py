@@ -42,24 +42,19 @@ def import_module_from_path(module_name, file_path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+module_files = [f for f in os.listdir('modules') if f.endswith('.py') and f != '__init__.py']
+
+modules = {}
+tab_names = []
+
+for file in module_files:
+    module_name = file.replace('.py', '')
+    module = import_module_from_path(module_name, os.path.join('modules', file))
+    modules[module_name] = module
+    tab_names.append(module.plugin_info["name"])
+
 def main():
-    # List all python files in the 'modules' folder
-    module_files = [f for f in os.listdir('modules') if f.endswith('.py') and f != '__init__.py']
-
-    # Import the modules
-    modules = {}
-    tab_names = []
-    for file in module_files:
-        module_name = file.replace('.py', '')
-        module = import_module_from_path(module_name, os.path.join('modules', file))
-        modules[module_name] = module
-        tab_names.append(module.plugin_info["name"])
-
-    # Streamlit app
-
-    #st.title("Dynamic Tabs from Modules")
-
-    # Create tabs for each module
     tabs = st.tabs(tab_names)
     x = 0
     for module_name, tab in zip(modules.keys(), tabs):
@@ -67,5 +62,5 @@ def main():
             modules[module_name].plugin_tab(x, tab_names)
         x += 1
 
-main()
-
+if __name__ == '__main__':
+	main()

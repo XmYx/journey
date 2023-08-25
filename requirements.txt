@@ -12,3 +12,4 @@
  opencv-contrib-python
  barfi
  git+https://www.github.com/XmYx/deforum.git
+ streamlit-extras

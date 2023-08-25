@@ -1,0 +1,194 @@
+[
+    {
+        "image": "images/pixel-art-xl.jpeg",
+        "title": "Pixel Art XL",
+        "repo": "nerijs/pixel-art-xl",
+        "trigger_word": "pixel art",
+        "weights": "pixel-art-xl.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/crayon.png",
+        "title": "Crayon Style",
+        "repo": "ostris/crayon_style_lora_sdxl",
+        "trigger_word": "",
+        "weights": "crayons_v1_sdxl.safetensors",
+        "is_compatible": false
+    },
+    {
+        "image": "images/papercut_SDXL.jpeg",
+        "title": "Papercut SDXL",
+        "repo": "TheLastBen/Papercut_SDXL",
+        "trigger_word": "papercut",
+        "weights": "papercut.safetensors",
+        "is_compatible": false
+    },
+    {
+        "image": "https://i.imgur.com/Su4bFgm.png",
+        "title": "Vulcan SDXL",
+        "repo": "davizca87/vulcan",
+        "trigger_word": "v5lcn",
+        "weights": "v5lcnXL-000004.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/lego-minifig-xl.jpeg",
+        "title": "Lego Minifig XL",
+        "repo": "nerijs/lego-minifig-xl",
+        "trigger_word": "lego minifig",
+        "weights": "legominifig-v1.0-000003.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/embroid.png",
+        "title": "Embroidery Style",
+        "repo": "ostris/embroidery_style_lora_sdxl",
+        "trigger_word": "",
+        "weights": "embroidered_style_v1_sdxl.safetensors",
+        "is_compatible": false
+    },
+    {
+        "image": "images/3d_style_4.jpeg",
+        "title": "3D Render Style",
+        "repo": "goofyai/3d_render_style_xl",
+        "trigger_word": "3d style",
+        "weights": "3d_render_style_xl.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/watercolor.png",
+        "title": "Watercolor Style",
+        "repo": "ostris/watercolor_style_lora_sdxl",
+        "trigger_word": "",
+        "weights": "watercolor_v1_sdxl.safetensors",
+        "is_compatible": false
+    },
+    {
+      "image": "https://huggingface.co/veryVANYA/ps1-graphics-sdxl/resolve/main/2070471.jpeg",
+      "title": "PS1 Graphics SDXL",
+      "repo":"veryVANYA/ps1-graphics-sdxl",
+      "trigger_word": "ps1 style",
+      "weights": "ps1_style_SDXL_v1.safetensors",
+      "is_compatible": true
+    },
+    {
+        "image": "images/william_eggleston.webp",
+        "title": "William Eggleston Style",
+        "repo": "TheLastBen/William_Eggleston_Style_SDXL",
+        "trigger_word": "by william eggleston",
+        "weights": "wegg.safetensors",
+        "is_compatible": false
+    },
+    {
+        "image": "https://huggingface.co/davizca87/c-a-g-coinmaker/resolve/main/1722160.jpeg",
+        "title": "CAG Coinmaker",
+        "repo": "davizca87/c-a-g-coinmaker",
+        "trigger_word": "c01n", 
+        "weights": "c01n-000010.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/dog.png",
+        "title": "Cyborg Style",
+        "repo": "goofyai/cyborg_style_xl",
+        "trigger_word": "cyborg style",
+        "weights": "cyborg_style_xl-off.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/ToyRedmond-ToyLoraForSDXL10.png",
+        "title": "Toy.Redmond",
+        "repo": "artificialguybr/ToyRedmond-ToyLoraForSDXL10",
+        "trigger_word": "FnkRedmAF",
+        "weights": "ToyRedmond-FnkRedmAF.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/voxel-xl-lora.png",
+        "title": "Voxel XL",
+        "repo": "Fictiverse/Voxel_XL_Lora",
+        "trigger_word": "voxel style",
+        "weights": "VoxelXL_v1.safetensors",
+        "is_compatible": true
+    },
+    {
+      "image": "images/uglysonic.webp",
+      "title": "Ugly Sonic",
+      "repo": "minimaxir/sdxl-ugly-sonic-lora",
+      "trigger_word": "sonic the hedgehog",
+      "weights": "pytorch_lora_weights.bin",
+      "is_compatible": true
+    },
+    {
+        "image": "images/corgi_brick.jpeg",
+        "title": "Lego BrickHeadz",
+        "repo": "nerijs/lego-brickheadz-xl",
+        "trigger_word": "lego brickheadz",
+        "weights": "legobrickheadz-v1.0-000004.safetensors",
+        "is_compatible": true
+    },
+    {
+      "image": "images/jojoso1.jpg",
+      "title": "JoJo's Bizarre style",
+      "repo": "Norod78/SDXL-jojoso_style-Lora",
+      "trigger_word": "jojoso style",
+      "weights": "SDXL-jojoso_style-Lora-r8.safetensors",
+      "is_compatible": true
+    },
+    {
+        "image": "images/pikachu.webp",
+        "title": "Pikachu XL",
+        "repo": "TheLastBen/Pikachu_SDXL",
+        "trigger_word": "pikachu",
+        "weights": "pikachu.safetensors",
+        "is_compatible": false
+    },
+    {
+        "image": "images/LogoRedmond-LogoLoraForSDXL.jpeg",
+        "title": "Logo.Redmond",
+        "repo": "artificialguybr/LogoRedmond-LogoLoraForSDXL",
+        "trigger_word": "LogoRedAF",
+        "weights": "LogoRedmond_LogoRedAF.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/LineAni.Redmond.png",
+        "title": "LinearManga.Redmond",
+        "repo": "artificialguybr/LineAniRedmond-LinearMangaSDXL",
+        "trigger_word": "LineAniAF",
+        "weights": "LineAniRedmond-LineAniAF.safetensors",
+        "is_compatible": true
+    },
+    {
+        "image": "images/josef_koudelka.webp",
+        "title": "Josef Koudelka Style",
+        "repo": "TheLastBen/Josef_Koudelka_Style_SDXL",
+        "trigger_word": "by josef koudelka",
+        "weights": "koud.safetensors",
+        "is_compatible": false
+    },
+    {
+      "image": "https://huggingface.co/goofyai/Leonardo_Ai_Style_Illustration/resolve/main/leo-2.png",
+      "title": "Leonardo Style",
+      "repo": "goofyai/Leonardo_Ai_Style_Illustration",
+      "trigger_word": "leonardo style",
+      "weights": "leonardo_illustration.safetensors",
+      "is_compatible": false
+    },
+    {
+      "image":"https://huggingface.co/Norod78/SDXL-simpstyle-Lora/resolve/main/Examples/00006-20230820150225-558-the%20girl%20with%20a%20pearl%20earring%20by%20johannes%20vermeer%20simpstyle%20_lora_SDXL-simpstyle-Lora_1_%2C%20Very%20detailed%2C%20clean%2C%20high%20quality%2C%20sh.jpg",
+      "title": "SimpStyle",
+      "repo": "Norod78/SDXL-simpstyle-Lora",
+      "trigger_word":"simpstyle",
+      "weights": "SDXL-simpstyle-Lora-r8.safetensors",
+      "is_compatible": true
+    },
+    {
+      "image":"https://huggingface.co/artificialguybr/StoryBookRedmond/resolve/main/00162-1569823442.png",
+      "title": "Storybook.Redmond",
+      "repo": "artificialguybr/StoryBookRedmond",
+      "trigger_word":"KidsRedmAF",
+      "weights": "StoryBookRedmond-KidsRedmAF.safetensors",
+      "is_compatible": false
+    }
+]
