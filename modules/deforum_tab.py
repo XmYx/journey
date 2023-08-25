@@ -256,7 +256,14 @@ def get_args():
     return args, anim_args
 
 
-#
+def datacallback(data):
+    image = None
+    if "cadence_frame" in data:
+        image = data['cadence_frame']
+    elif 'image' in data:
+        image = data['image']
+    if image is not None:
+        st.session_state["txt2vid"]["preview_image"].image(image)
 def plugin_tab(tabs, tab_names):
     #def_runner = runner()
 
@@ -524,7 +531,7 @@ def plugin_tab(tabs, tab_names):
 
                     args = SimpleNamespace(**args)
                     anim_args = SimpleNamespace(**anim_args)
-                    print(args.prompt)
+                    #print(args.prompt)
 
                     # expand prompts out to per-frame
                     prompt_series = pd.Series([np.nan for a in range(anim_args.max_frames)])
@@ -578,7 +585,7 @@ def plugin_tab(tabs, tab_names):
                     else:
                         deforum.args.seed = int(deforum.args.seed)
                     deforum.generate = generate_inner
-
+                    deforum.datacallback = datacallback
 
                     success = deforum()
 

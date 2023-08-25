@@ -27,7 +27,6 @@ def generate_with_block(prompt, next_prompt, blend_value, negative_prompt, args,
         "scheduler":"ddim"
     }
 
-    print("init images", init_images)
 
     if init_images[0] is not None:
         if "img2img" not in gs.data["models"]:
@@ -41,24 +40,26 @@ def generate_with_block(prompt, next_prompt, blend_value, negative_prompt, args,
 
 
         gen_args, pipe = check_args(gen_args, gs.data["models"]["img2img"])
-
+        del gen_args["denoising_start"]
         gen_args["image"] = init_images[0]
         gen_args["strength"] = args.strength
+        print("using img2img pipe")
     else:
         gen_args, pipe = check_args(gen_args, gs.data["models"]["base"])
 
     if pipe.device.type != 'cuda':
         pipe.to('cuda')
-
     image = pipe(**gen_args).images[0]
-    st.session_state["txt2vid"]["preview_image"].image(image)
+
     return image
 
 
 def generate_inner(args, keys, anim_args, loop_args, controlnet_args, root, frame=0, return_sample=False,
                    sampler_name=None):
 
-    print(args, keys)
+    print("args",args)
+    print("keys",keys)
+    print("anim_args",anim_args)
 
     assert args.prompt is not None
 
