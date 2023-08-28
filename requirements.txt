@@ -6,7 +6,7 @@
  transformers
  accelerate
  safetensors
- streamlit
+ streamlit==1.26.0
  lpips
  omegaconf
  opencv-contrib-python

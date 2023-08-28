@@ -43,24 +43,46 @@ def import_module_from_path(module_name, file_path):
     spec.loader.exec_module(module)
     return module
 
-module_files = [f for f in os.listdir('modules') if f.endswith('.py') and f != '__init__.py']
 
-modules = {}
-tab_names = []
+# def main():
+#     tabs = st.tabs(tab_names)
+#     x = 0
+#     for module_name, tab in zip(modules.keys(), tabs):
+#         with tab:
+#             modules[module_name].plugin_tab(x, tab_names)
+#         x += 1
+#
+# if __name__ == '__main__':
+#     main()
 
-for file in module_files:
-    module_name = file.replace('.py', '')
-    module = import_module_from_path(module_name, os.path.join('modules', file))
-    modules[module_name] = module
-    tab_names.append(module.plugin_info["name"])
 
 def main():
-    tabs = st.tabs(tab_names)
-    x = 0
-    for module_name, tab in zip(modules.keys(), tabs):
-        with tab:
-            modules[module_name].plugin_tab(x, tab_names)
-        x += 1
+    module_files = [f for f in os.listdir('modules') if f.endswith('.py') and f != '__init__.py']
+
+    modules = {}
+    tab_names = []
+
+    for file in module_files:
+        module_name = file.replace('.py', '')
+        module = import_module_from_path(module_name, os.path.join('modules', file))
+        modules[module_name] = module
+        tab_names.append(module.plugin_info["name"])
+
+    use_tabs = st.sidebar.toggle('Use Tabs')
+    if use_tabs:
+        tabs = st.tabs(tab_names)
+        x = 0
+        for module_name, tab in zip(modules.keys(), tabs):
+            with tab:
+                modules[module_name].plugin_tab(x, tab_names)
+            x += 1
+    else:
+        # Display buttons on the sidebar for each module
+        selected_module = st.sidebar.radio("Choose a module", list(modules.keys()))
+        x = 1
+        # Load the relevant module in the main section based on the selected button
+        if selected_module in modules:
+            modules[selected_module].plugin_tab(x, tab_names)
 
 if __name__ == '__main__':
-	main()
+    main()

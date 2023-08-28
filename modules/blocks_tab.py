@@ -15,10 +15,12 @@ def display_preview():
 def plugin_tab(tab, tab_names):
     initialize()
 
+    display_sidebar()
 
-    if tab_names[tab] == "Blocks v2":
-         display_sidebar()
+    print(tab, tab_names)
 
+    # if tab_names[tab] == "Blocks v2":
+    #     print('were on blocks')
     col1, col2 = st.columns(2)
     if "preview_holder" not in st.session_state:
         with col2:
