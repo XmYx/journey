@@ -4,7 +4,7 @@ import torch
 from PIL import Image
 
 from backend.block_base import register_class, BaseBlock
-from extras.block_helpers import check_args, style
+from extras.block_helpers import check_args, style, list_model_files
 from extras.sdjourney_backend import scheduler_type_values, aspect_ratios
 from extras.styles import style_keys
 from main import singleton as gs
@@ -282,6 +282,26 @@ class CodeformersBlock(BaseBlock):
                 st.session_state.start_index = 8
             else:
                 st.session_state.start_index += 1
+        return data
+
+
+@register_class
+class LoraLoaderBlock(BaseBlock):
+    name = "LORA Loader"
+    def __init__(self):
+        super().__init__()
+        self.dropdown('Select Lora', list_model_files())
+    def fn(self, data: dict) -> dict:
+        widget = self.widgets[0]
+        lora = widget.options[widget.selected_index]
+        print("loraselect", lora)
+
+        if "base" in gs.data['models']:
+            try:
+                gs.data["models"]["base"].load_lora_weights(lora)
+            except Exception as e:
+                print("Could not load LORA", repr(e))
+
         return data
 
 
