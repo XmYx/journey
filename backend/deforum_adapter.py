@@ -15,6 +15,8 @@ from diffusers import StableDiffusionXLImg2ImgPipeline
 
 
 def generate_with_block(prompt, next_prompt, blend_value, negative_prompt, args, root, frame, init_images=None):
+
+
     if "base" not in gs.data["models"]:
         from modules.sdjourney_tab import load_pipeline
 
@@ -39,17 +41,22 @@ def generate_with_block(prompt, next_prompt, blend_value, negative_prompt, args,
                                                                             scheduler=gs.data["models"]["base"].scheduler)
 
 
-        gen_args, pipe = check_args(gen_args, gs.data["models"]["img2img"])
+        gen_args = check_args(gen_args, gs.data["models"]["img2img"])
         del gen_args["denoising_start"]
         gen_args["image"] = init_images[0]
         gen_args["strength"] = args.strength
         print("using img2img pipe")
-    else:
-        gen_args, pipe = check_args(gen_args, gs.data["models"]["base"])
+        if gs.data["models"]["img2img"].device.type != 'cuda':
+            gs.data["models"]["img2img"].to('cuda')
+        image = gs.data["models"]["img2img"](**gen_args).images[0]
 
-    if pipe.device.type != 'cuda':
-        pipe.to('cuda')
-    image = pipe(**gen_args).images[0]
+
+
+    else:
+        gen_args = check_args(gen_args, gs.data["models"]["base"])
+        if gs.data["models"]["base"].device.type != 'cuda':
+            gs.data["models"]["base"].to('cuda')
+        image = gs.data["models"]["base"](**gen_args).images[0]
 
     return image
 

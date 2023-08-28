@@ -1,3 +1,5 @@
+import gc
+
 import torch
 from PIL import Image
 
@@ -7,6 +9,8 @@ from extras.sdjourney_backend import scheduler_type_values, aspect_ratios
 from extras.styles import style_keys
 from main import singleton as gs
 import streamlit as st
+
+from modules.sdjourney_tab import lowvram
 
 plugin_info = {"name": "Blocks v2"}
 
@@ -98,8 +102,6 @@ class DiffusersPromptStyleBlock(BaseBlock):
 class DiffusersSamplerBlock(BaseBlock):
 
     name = "SD Sampler"
-
-
     def __init__(self):
         super().__init__()
         self.dropdown('Scheduler', scheduler_type_values)
@@ -108,12 +110,13 @@ class DiffusersSamplerBlock(BaseBlock):
         if hasattr(self, 'index'):
             print("Block Index", self.index)
             print("Block Amount", len(gs.data['added_blocks']))
-        target_device = "cuda"
-        if gs.data["models"]["base"].device.type != target_device:
-            gs.data["models"]["base"].to(target_device)
+        # target_device = "cuda"
+        # if not lowvram:
+        #     if gs.data["models"]["base"].device.type != target_device:
+        #         gs.data["models"]["base"].to(target_device)
         widget = self.widgets[0]
         data['scheduler'] = widget.options[widget.selected_index]
-        args, pipe = check_args(data, gs.data['models']['base'])
+        args = check_args(data, gs.data['models']['base'])
         progressbar = False
         def callback(i, t, latents):
             if progressbar:
@@ -128,7 +131,7 @@ class DiffusersSamplerBlock(BaseBlock):
         print("Show Image", show_image)
 
         if show_image:
-            result = pipe.generate(**args)
+            result = gs.data['models']['base'].generate(**args)
             gs.data["latents"] = result[0]
             data["result_image"] = result[1]
             st.session_state.preview = result[1][0]
@@ -143,8 +146,17 @@ class DiffusersSamplerBlock(BaseBlock):
 
         else:
             args['output_type'] = 'latent'
-            result = pipe(**args).images
+            result = gs.data['models']['base'](**args).images
+            for latent in result:
+                latent.to('cpu')
+
             gs.data["latents"] = result
+        # if not lowvram:
+        #     gs.data["models"]["base"].to('cpu')
+        gc.collect()
+
+        torch.cuda.empty_cache()
+
         return data
 
 
@@ -166,6 +178,10 @@ def preview_latents(latents):
                      .byte()).cpu()
     rgb_image = latents_ubyte.numpy()[:, :, ::-1]
     image = Image.fromarray(rgb_image)
+
+    latents.to('cpu')
+    del latents
+
     st.session_state.preview_holder.image(image)
 
 @register_class
@@ -178,13 +194,16 @@ class DiffusersRefinerBlock(BaseBlock):
         super().__init__()
         self.dropdown('Scheduler', scheduler_type_values)
     def fn(self, data: dict) -> dict:
+        if lowvram:
+            gs.data["models"]["base"].to('cpu')
 
         target_device = "cuda"
-        if gs.data["models"]["refiner"].device.type != target_device:
-            gs.data["models"]["refiner"].to(target_device)
+        if not lowvram:
+            if gs.data["models"]["refiner"].device.type != target_device:
+                gs.data["models"]["refiner"].to(target_device)
         widget = self.widgets[0]
         data['scheduler'] = widget.options[widget.selected_index]
-        args, pipe = check_args(data, gs.data['models']['refiner'])
+        args = check_args(data, gs.data['models']['refiner'])
         progressbar = False
         def callback(i, t, latents):
             if progressbar:
@@ -196,10 +215,12 @@ class DiffusersRefinerBlock(BaseBlock):
         latents = gs.data.get('latents')
         images = []
         for latent in latents:
-            args['image'] = latent
-            result = pipe(**args)
+            args['image'] = latent.cpu()
+            result = gs.data['models']['refiner'](**args)
             images.append(result.images[0])
-
+        if not lowvram:
+            gs.data["models"]["refiner"].to('cpu')
+            torch.cuda.empty_cache()
 
         #gs.data["latents"] = result[0]
         data["result_image"] = images
@@ -215,6 +236,8 @@ class DiffusersRefinerBlock(BaseBlock):
                 st.session_state.start_index = 8
             else:
                 st.session_state.start_index += 1
+        torch.cuda.empty_cache()
+
         return data
 @register_class
 class CodeformersBlock(BaseBlock):

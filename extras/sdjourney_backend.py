@@ -189,7 +189,7 @@ def get_scheduler(pipe, scheduler: SchedulerType):
     new_scheduler = scheduler_mapping[scheduler](pipe.scheduler.config)
     pipe.scheduler = new_scheduler
 
-    return pipe
+    return
 
 
 

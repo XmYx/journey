@@ -323,10 +323,10 @@ def check_args(args, pipe):
 
     scheduler = args['scheduler']
     scheduler_enum = SchedulerType(scheduler)
-    pipe = get_scheduler(pipe, scheduler_enum)
+    get_scheduler(pipe, scheduler_enum)
 
 
-    return gen_args, pipe
+    return gen_args
 def generate(args):
     target_device = "cuda"
     if gs.data["models"]["base"].device.type != target_device:

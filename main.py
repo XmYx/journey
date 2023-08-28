@@ -4,9 +4,9 @@ import time
 
 sys.path.append('CodeFormer')
 
-from extras.singleton import Singleton
+from extras import singleton
 
-singleton = Singleton.getInstance()
+#singleton = Singleton.getInstance()
 
 if __name__ == "__main__":
     process = subprocess.Popen(["streamlit", "run", "ui.py"])

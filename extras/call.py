@@ -1,3 +1,5 @@
+import gc
+
 import torch
 from diffusers.pipelines.stable_diffusion_xl.pipeline_stable_diffusion_xl import rescale_noise_cfg
 
@@ -287,7 +289,11 @@ def new_call(
             # compute the previous noisy sample x_t -> x_t-1
             latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0]
             if i == num_target_steps - 1:
-               return_latents = latents.clone().detach().cpu()
+                return_latents = latents.clone().detach().cpu()
+                if self.vae.dtype == torch.float16 and self.vae.config.force_upcast:
+                    self.upcast_vae()
+                    return_latents = return_latents.to(next(iter(self.vae.post_quant_conv.parameters())).dtype)
+
             # call the callback, if provided
             if i == len(timesteps) - 1 or ((i + 1) > num_warmup_steps and (i + 1) % self.scheduler.order == 0):
                 progress_bar.update()
@@ -301,12 +307,16 @@ def new_call(
 
     image = self.vae.decode(latents / self.vae.config.scaling_factor, return_dict=False)[0]
 
+    latents.to('cpu')
+    del latents
+    print('cuda collect')
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
+    gc.collect()
     image = self.image_processor.postprocess(image, output_type=output_type)
 
     # Offload last model to CPU
     if hasattr(self, "final_offload_hook") and self.final_offload_hook is not None:
         self.final_offload_hook.offload()
-
-
 
     return (return_latents, image)

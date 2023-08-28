@@ -74,7 +74,7 @@ def load_lora():
             del gs.data['models']['base']
             gc.collect()
             gs.data['models']['base'] = copy.deepcopy(gs.data['models']['base_copy'])
-            gs.data['models']['base'].to('cuda')
+            gs.data['models']['base'].to('cpu')
         else:
             gs.data['models']['base'].unload_lora_weights()
         is_compatible = st.session_state.lora_select[4]
