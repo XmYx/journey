@@ -52,6 +52,11 @@ def generate(args, callback):
     callback(args["num_inference_steps"], None, None)
 
     st.session_state["images"] = result[1]
+
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
+
+
     return result[1]
 
 
@@ -75,6 +80,8 @@ def process(image, args, callback):
 
     callback(args["num_inference_steps"], None, None)
     st.session_state.upscaled_image = image
+    torch.cuda.empty_cache()
+    torch.cuda.ipc_collect()
 
     #return image
 
@@ -88,7 +95,7 @@ def process_image(latent, selected_values, callback):
 
     get_scheduler(gs.data["models"]["refiner"], scheduler_enum)
     args = get_generation_args(selected_values, gs.data["models"]["refiner"])
-    st.session_state.function_queue.append(lambda: process(image=latent, args=args, callback=callback))
+    process(image=latent, args=args, callback=callback)
 
 def load_pipeline(model_choice):
 
@@ -248,16 +255,15 @@ def plugin_tab(*args, **kwargs):
         scheduler = selected_values['Scheduler']
         scheduler_enum = SchedulerType(scheduler)
         get_scheduler(gs.data["models"]["base"], scheduler_enum)
-        st.session_state.function_queue.append(lambda: generate(callback=callback, args=args))
-    if 'function_queue' in st.session_state:
-        while st.session_state.function_queue:
-            func = st.session_state.function_queue.popleft()
-            func()
+        generate(callback=callback, args=args)
+    # while st.session_state.function_queue:
+    #     func = st.session_state.function_queue.popleft()
+    #     func()
+    #
+    #     torch.cuda.empty_cache()
+    #     torch.cuda.ipc_collect()
 
-            torch.cuda.empty_cache()
-            torch.cuda.ipc_collect()
-
-            refresh = True
+        refresh = True
     if refresh:
         st.experimental_rerun()
         refresh = None
