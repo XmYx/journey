@@ -64,6 +64,8 @@ def render_widget(widget):
         selection = st.selectbox(widget.name, options=widget.options,
                                  index=widget.selected_index, key=widget.uid)
         widget.selected_index = widget.options.index(selection)
+        widget.value = selection
+
     elif widget.widget_type == "slider":
         widget.value = st.slider(widget.name, min_value=0, max_value=100, value=widget.value, key=widget.uid)
     elif widget.widget_type == "checkbox":

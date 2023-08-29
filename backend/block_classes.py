@@ -293,9 +293,7 @@ class LoraLoaderBlock(BaseBlock):
         self.dropdown('Select Lora', list_model_files())
     def fn(self, data: dict) -> dict:
         widget = self.widgets[0]
-        lora = widget.options[widget.selected_index]
-        print("loraselect", lora)
-
+        lora = widget.value
         if "base" in gs.data['models']:
             try:
                 gs.data["models"]["base"].load_lora_weights(lora)

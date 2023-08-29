@@ -6,9 +6,14 @@ sys.path.append('CodeFormer')
 
 from extras import singleton
 
+singleton.data = {}
+singleton.data["models"] = {}
+singleton.base_loaded = None
+
 #singleton = Singleton.getInstance()
 
 if __name__ == "__main__":
+
     process = subprocess.Popen(["streamlit", "run", "ui.py"])
 
     try:

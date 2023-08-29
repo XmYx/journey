@@ -1,6 +1,8 @@
 import copy
 import gc
+import hashlib
 import json
+import os
 
 import streamlit as st
 from huggingface_hub import hf_hub_download
@@ -11,11 +13,23 @@ from io import BytesIO
 
 
 def load_image_from_url(url):
-    """Utility function to load an image from a URL into PIL format"""
-    response = requests.get(url)
-    img = Image.open(BytesIO(response.content))
-    return img
+    # Create a hash of the URL to use as the filename
+    url_hash = hashlib.md5(url.encode()).hexdigest()
 
+    # Define the local cache path
+    os.makedirs('img_cache', exist_ok=True)
+    cache_path = f"img_cache/{url_hash}.jpg"
+
+    # Check if the image is in local cache
+    if os.path.exists(cache_path):
+        return Image.open(cache_path)
+
+    # Download the image and save it to the cache
+    response = requests.get(url)
+    with open(cache_path, 'wb') as f:
+        f.write(response.content)
+
+    return Image.open(cache_path)
 
 def display_grid(data):
     chunk_size = 4
@@ -66,7 +80,7 @@ def load_lora():
 
     repo_name = st.session_state.lora_select[0]
     weight_name = st.session_state.lora_select[2]
-    full_path_lora = st.session_state.saved_names[st.session_state.lora_select[3]]
+    full_path_lora = gs.data['saved_names'][st.session_state.lora_select[3]]
 
     cross_attention_kwargs = None
     if st.session_state.last_lora != repo_name:
@@ -118,17 +132,15 @@ def load_lora():
 plugin_info = {"name": "XL Lora Browser"}
 
 def plugin_tab(*args, **kwargs):
-    show = st.sidebar.checkbox("Show LORA Browser")
-
-    st.session_state.last_merged = False
+    if 'last_merged' not in st.session_state:
+        st.session_state.last_merged = False
     if "last_lora" not in st.session_state:
         st.session_state.last_lora = ""
 
-
-    if show:
+    if "sdxl_loras_data" not in gs.data:
         with open("config/xl_loras.json", "r") as file:
-            data = json.load(file)
-            st.session_state.sdxl_loras = [
+            gs.data['sdxl_loras_data'] = json.load(file)
+            gs.data['sdxl_loras'] = [
                 {
                     "image": item["image"],
                     "title": item["title"],
@@ -137,10 +149,10 @@ def plugin_tab(*args, **kwargs):
                     "weights": item["weights"],
                     "is_compatible": item["is_compatible"],
                 }
-                for item in data
+                for item in gs.data['sdxl_loras_data']
             ]
-            st.session_state.saved_names = [
-                hf_hub_download(item["repo"], item["weights"]) for item in st.session_state.sdxl_loras
+            gs.data['saved_names'] = [
+                hf_hub_download(item["repo"], item["weights"]) for item in gs.data['sdxl_loras']
             ]
 
-        display_grid(data)
+    display_grid(gs.data['sdxl_loras_data'])

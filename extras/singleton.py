@@ -1,9 +1,4 @@
 
-data = {}
-
-data["models"] = {}
-
-base_loaded = None
 
 # class Singleton:
 
