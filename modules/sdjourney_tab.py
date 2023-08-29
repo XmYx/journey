@@ -201,7 +201,10 @@ def plugin_tab(*args, **kwargs):
             progress_bar.progress(normalized_i)
             if latents != None:
                 preview_latents(latents)
-        selected_values = dynamic_controls(controls_config)
+        with st.form('SD Journey'):
+            selected_values = dynamic_controls(controls_config)
+            generate_button = st.form_submit_button("Generate")
+
     with col2:
         # st.session_state.image = st_canvas(
         #     fill_color="rgba(255, 165, 0, 0.3)",  # Fixed fill color with some opacity
@@ -221,9 +224,7 @@ def plugin_tab(*args, **kwargs):
             # if st.button("Inpaint"):
             #     st.session_state.upscaled_image = inpaint_image(st.session_state.upscaled_image, st.session_state.image.image_data )
         st.session_state.image = st.empty()
-
         steps = selected_values['Steps']
-        generate_button = st.button("Generate", key="sd_journey_gen")
         num_images = len(st.session_state["images"])
         cols = st.columns(2)
         if 'image_placeholders' not in st.session_state:
@@ -241,7 +242,7 @@ def plugin_tab(*args, **kwargs):
                         if cols[j].button(f"Refine {index + 1}"):
                             process_image(st.session_state["latents"][index], selected_values, callback)
     with col1:
-        load_btn = st.button("Pre-Load Models")
+        # load_btn = st.button("Pre-Load Models")
         # Display upscaled image if it exists
         if st.session_state.upscaled_image:
             st.image(st.session_state.upscaled_image, caption="Refined Image")

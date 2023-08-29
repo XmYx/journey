@@ -83,7 +83,8 @@ def outpaint(args):
     image = gs.data["models"]["inpaint"](image=image,
                                          mask_image=mask,
                                          prompt=prompt,
-                                         generator=generator).images[0]
+                                         generator=generator,
+                                         strength=0.6).images[0]
     return image
 def img2img(args):
     """Mock function that just returns the input image."""
@@ -167,6 +168,7 @@ def create_sequence(args):
         # Use the bottom half as the top half for the next image
         new_top_half = bottom_half.copy()
         new_bottom_half = Image.new("RGB", (1024, 512), (255, 255, 255))
+        new_bottom_half = bottom_half
         next_image = Image.new("RGB", (1024, 1024))
         next_image.paste(new_top_half, (0, 0))
         next_image.paste(new_bottom_half, (0, 512))
@@ -195,41 +197,45 @@ def create_sequence(args):
 
 
 def plugin_tab(*args, **kwargs):
+    col1, col2 = st.columns([2, 5])
 
-    top_flow = st.toggle('Use Flow on Top Image')
-    bottom_flow = st.toggle('Use Flow on Bottom Image')
+    with col1:
+        with st.form('Deforum Outpaint'):
+            top_flow = st.toggle('Use Flow on Top Image')
+            bottom_flow = st.toggle('Use Flow on Bottom Image')
 
-    frame_count = st.number_input('Frames', min_value=1, max_value=500, value=5)
-    generate_button = st.button('Generate')
-    lora = st.selectbox('Lora', list_model_files())
-    seed = st.number_input('Seed', value=0)
-    prompt = st.text_area('Prompt')
-    gif_duration = st.number_input('ms / frame', value=120, min_value=40, max_value=5000)
-    method = st.toggle('Inpaint/Img2Img')
-    preview = st.empty()
-    if "lora_loaded" not in gs.data:
-        gs.data["lora_loaded"] = ""
-    if generate_button:
+            frame_count = st.number_input('Frames', min_value=1, max_value=500, value=5)
+            lora = st.selectbox('Lora', list_model_files())
+            seed = st.number_input('Seed', value=0)
+            prompt = st.text_area('Prompt')
+            gif_duration = st.number_input('ms / frame', value=120, min_value=40, max_value=5000)
+            method = st.toggle('Inpaint/Img2Img')
+            generate_button = st.form_submit_button('Generate')
+    with col2:
+        preview = st.empty()
+        if "lora_loaded" not in gs.data:
+            gs.data["lora_loaded"] = ""
+        if generate_button:
 
-        load()
+            load()
 
-        if gs.data["lora_loaded"] != lora:
-            gs.data["models"]["base"].load_lora_weights(lora)
-            gs.data["lora_loaded"] = lora
+            if gs.data["lora_loaded"] != lora:
+                gs.data["models"]["base"].load_lora_weights(lora)
+                gs.data["lora_loaded"] = lora
 
-        args = {"prompt":prompt,
-                "frame_count":frame_count,
-                "preview":preview,
-                "seed":seed,
-                'use_img2img':method,
-                'top_flow':top_flow,
-                'bottom_flow':bottom_flow}
+            args = {"prompt":prompt,
+                    "frame_count":frame_count,
+                    "preview":preview,
+                    "seed":seed,
+                    'use_img2img':method,
+                    'top_flow':top_flow,
+                    'bottom_flow':bottom_flow}
 
-        frames = create_sequence(args)
+            frames = create_sequence(args)
 
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        gif_path = f"output/{timestamp}_sequence.gif"
-        frames[0].save(gif_path, append_images=frames[1:], save_all=True, duration=gif_duration, loop=0)
-        preview.image(gif_path)
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            gif_path = f"output/{timestamp}_sequence.gif"
+            frames[0].save(gif_path, append_images=frames[1:], save_all=True, duration=gif_duration, loop=0)
+            preview.image(gif_path)
 
 
