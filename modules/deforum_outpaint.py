@@ -161,7 +161,13 @@ def create_sequence(args):
         args["image"] = current_image
         args["mask"] = mask
         # Use the outpaint function
-        current_image = img2img(args)
+
+        use_img2img = args.get('use_img2img', False)
+
+        if use_img2img:
+            current_image = img2img(args)
+        else:
+            current_image = outpaint(args)
 
     return frames
 
@@ -173,6 +179,7 @@ def plugin_tab(*args, **kwargs):
     seed = st.number_input('Seed', value=0)
     prompt = st.text_area('Prompt')
     gif_duration = st.number_input('ms / frame', value=120, min_value=40, max_value=5000)
+    method = st.toggle('Inpaint/Img2Img')
     preview = st.empty()
     if "lora_loaded" not in gs.data:
         gs.data["lora_loaded"] = ""
@@ -187,7 +194,8 @@ def plugin_tab(*args, **kwargs):
         args = {"prompt":prompt,
                 "frame_count":frame_count,
                 "preview":preview,
-                "seed":seed}
+                "seed":seed,
+                'use_img2img':method}
 
         frames = create_sequence(args)
         st.image(frames)
