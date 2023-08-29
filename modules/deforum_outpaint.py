@@ -1,3 +1,4 @@
+import copy
 import secrets
 from datetime import datetime
 
@@ -25,26 +26,30 @@ def load():
             "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16",
             use_safetensors=True, device_map="auto"
         )
+        gs.data["models"]["base"] = pipe
+    if 'inpaint' not in gs.data['models']:
 
-
-
+        pipe = gs.data["models"]["base"]
         inpaintpipe = StableDiffusionXLInpaintPipeline(vae=pipe.vae,
                                          text_encoder=pipe.text_encoder,
                                          text_encoder_2=pipe.text_encoder_2,
                                          tokenizer=pipe.tokenizer,
                                          tokenizer_2=pipe.tokenizer_2,
                                          unet=pipe.unet,
-                                         scheduler=pipe.scheduler).to('cuda')
+                                         scheduler=pipe.scheduler)
+        gs.data["models"]["inpaint"] = inpaintpipe
+
+    if 'img2img' not in gs.data['models']:
+        pipe = gs.data["models"]["base"]
+
         img2imgpipe = StableDiffusionXLImg2ImgPipeline(vae=pipe.vae,
                                          text_encoder=pipe.text_encoder,
                                          text_encoder_2=pipe.text_encoder_2,
                                          tokenizer=pipe.tokenizer,
                                          tokenizer_2=pipe.tokenizer_2,
                                          unet=pipe.unet,
-                                         scheduler=pipe.scheduler).to('cuda')
+                                         scheduler=pipe.scheduler)
 
-        gs.data["models"]["base"] = pipe
-        gs.data["models"]["inpaint"] = inpaintpipe
         gs.data["models"]["img2img"] = img2imgpipe
 
 def get_generator(seed):
@@ -125,8 +130,13 @@ def create_sequence(args):
     top_half_np = np.array(top_half).astype(np.uint8)
     bottom_half_np = np.array(bottom_half).astype(np.uint8)
     flow = get_flow_from_images(top_half, bottom_half, method, raft_model, prev_flow=None)
-    top_half_np = image_transform_optical_flow(top_half_np, flow, 1)
-    top_half = Image.fromarray(top_half_np)
+    prev_flow = copy.deepcopy(flow)
+
+    top_flow = args.get('top_flow', False)
+    bottom_flow = args.get('bottom_flow', False)
+    if bottom_flow:
+        top_half_np = image_transform_optical_flow(top_half_np, flow, 1)
+        top_half = Image.fromarray(top_half_np)
 
     frames.append(top_half)
 
@@ -137,13 +147,20 @@ def create_sequence(args):
             preview.image(current_image)
 
         top_half = current_image.crop((0, 0, 1024, 512))
+
+        if top_flow:
+            top_half_np = image_transform_optical_flow(top_half_np, flow, 1)
+            top_half = Image.fromarray(top_half_np)
+
         bottom_half = current_image.crop((0, 512, 1024, 1024))
 
         top_half_np = np.array(top_half).astype(np.uint8)
         bottom_half_np = np.array(bottom_half).astype(np.uint8)
-        flow = get_flow_from_images(top_half, bottom_half, method, raft_model, prev_flow=flow)
-        bottom_half_np = image_transform_optical_flow(bottom_half_np, flow, 1)
-        bottom_half = Image.fromarray(bottom_half_np)
+        flow = get_flow_from_images(top_half, bottom_half, method, raft_model, prev_flow=prev_flow)
+
+        if bottom_flow:
+            bottom_half_np = image_transform_optical_flow(bottom_half_np, flow, 1)
+            bottom_half = Image.fromarray(bottom_half_np)
 
         frames.append(bottom_half)
 
@@ -158,21 +175,30 @@ def create_sequence(args):
         mask = Image.new("L", (1024, 1024), 0)
         draw = ImageDraw.Draw(mask)
         draw.rectangle([(0, 512), (1024, 1024)], fill=255)
-        args["image"] = current_image
         args["mask"] = mask
         # Use the outpaint function
 
         use_img2img = args.get('use_img2img', False)
 
         if use_img2img:
+            args["image"] = current_image
             current_image = img2img(args)
         else:
+            args["image"] = next_image
             current_image = outpaint(args)
-
+        torch.cuda.empty_cache()
+        torch.cuda.ipc_collect()
+        prev_flow = copy.deepcopy(flow)
     return frames
 
 
+
+
 def plugin_tab(*args, **kwargs):
+
+    top_flow = st.toggle('Use Flow on Top Image')
+    bottom_flow = st.toggle('Use Flow on Bottom Image')
+
     frame_count = st.number_input('Frames', min_value=1, max_value=500, value=5)
     generate_button = st.button('Generate')
     lora = st.selectbox('Lora', list_model_files())
@@ -195,7 +221,9 @@ def plugin_tab(*args, **kwargs):
                 "frame_count":frame_count,
                 "preview":preview,
                 "seed":seed,
-                'use_img2img':method}
+                'use_img2img':method,
+                'top_flow':top_flow,
+                'bottom_flow':bottom_flow}
 
         frames = create_sequence(args)
         st.image(frames)
