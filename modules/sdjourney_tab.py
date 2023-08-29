@@ -253,6 +253,10 @@ def plugin_tab(*args, **kwargs):
         while st.session_state.function_queue:
             func = st.session_state.function_queue.popleft()
             func()
+
+            torch.cuda.empty_cache()
+            torch.cuda.ipc_collect()
+
             refresh = True
     if refresh:
         st.experimental_rerun()

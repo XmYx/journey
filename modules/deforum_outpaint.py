@@ -226,9 +226,10 @@ def plugin_tab(*args, **kwargs):
                 'bottom_flow':bottom_flow}
 
         frames = create_sequence(args)
-        st.image(frames)
+
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         gif_path = f"output/{timestamp}_sequence.gif"
         frames[0].save(gif_path, append_images=frames[1:], save_all=True, duration=gif_duration, loop=0)
+        preview.image(gif_path)
 
 
