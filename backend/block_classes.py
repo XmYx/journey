@@ -33,6 +33,10 @@ class SampleBlock(BaseBlock):
         print("SAMPLE FUNCTION", data)
         return data
 
+
+xl_models = {
+    'DreamshaperXL': 'Lykon/dreamshaper-xl-1-0',
+}
 @register_class
 class DiffusersXLLoaderBlock(BaseBlock):
 
@@ -41,12 +45,16 @@ class DiffusersXLLoaderBlock(BaseBlock):
     def __init__(self):
         super().__init__()
         self.dropdown('model_select', ["XL", "Kandinsky"])
+        self.dropdown('model_repo', [key for key, _ in xl_models])
     def fn(self, data: dict) -> dict:
         from modules.sdjourney_tab import load_pipeline
 
         selection = self.widgets[0].selected_index
         selection = self.widgets[0].options[selection]
-        load_pipeline(selection)
+
+        model_repo = self.widgets[1].value
+
+        load_pipeline(selection, model_repo=model_repo)
 
         return data
 @register_class

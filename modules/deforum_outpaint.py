@@ -83,8 +83,7 @@ def outpaint(args):
     image = gs.data["models"]["inpaint"](image=image,
                                          mask_image=mask,
                                          prompt=prompt,
-                                         generator=generator,
-                                         strength=0.6).images[0]
+                                         generator=generator).images[0]
     return image
 def img2img(args):
     """Mock function that just returns the input image."""

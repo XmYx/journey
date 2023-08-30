@@ -97,14 +97,15 @@ def process_image(latent, selected_values, callback):
     args = get_generation_args(selected_values, gs.data["models"]["refiner"])
     process(image=latent, args=args, callback=callback)
 
-def load_pipeline(model_choice):
+def load_pipeline(model_choice, model_repo=None):
 
     print("LOADED:", gs.base_loaded)
-
+    if model_repo == None:
+        model_repo = "stabilityai/stable-diffusion-xl-base-1.0"
     if gs.base_loaded != model_choice:
         if model_choice == "XL":
             base_pipe = DiffusionPipeline.from_pretrained(
-                "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16",
+                model_repo, torch_dtype=torch.float16, variant="fp16",
                 use_safetensors=True
             )
 
