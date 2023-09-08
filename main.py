@@ -3,6 +3,7 @@ import sys
 import time
 
 sys.path.append('CodeFormer')
+sys.path.append('src/TokenFlow')
 
 from extras import singleton
 
