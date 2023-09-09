@@ -26,6 +26,7 @@ def plugin_tab(*args, **kwargs):
     st.title("Stable Diffusion Processor")
 
     st.session_state.output_path = st.text_input("Output Path:", st.session_state.output_path)
+    st.session_state.data_path = st.text_input("Data Path:", st.session_state.data_path)
     st.session_state.n_timesteps = st.number_input("Number of Time Steps:", value=st.session_state.n_timesteps)
     st.session_state.start = st.number_input("Start:", min_value=0.0, max_value=1.0, value=st.session_state.start)
     st.session_state.use_ddim_noise = st.checkbox("Use DDim Noise:", value=st.session_state.use_ddim_noise)
@@ -45,7 +46,7 @@ def plugin_tab(*args, **kwargs):
             "negative_prompt": st.session_state.negative_prompt,
             "guidance_scale": st.session_state.guidance_scale,
             # Add other parameters from preprocessing tab
-            "data_path": "data/forestgump",
+            "data_path": st.session_state.data_path,
             "H": st.session_state.H,
             "W": st.session_state.W,
             "sd_version": st.session_state.sd_version,
