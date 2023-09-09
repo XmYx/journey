@@ -14,3 +14,4 @@
  git+https://www.github.com/XmYx/deforum.git
  streamlit-extras
  kornia
+ streamlit-drawable-canvas
