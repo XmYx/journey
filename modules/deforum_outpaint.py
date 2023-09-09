@@ -20,10 +20,14 @@ from diffusers import StableDiffusionXLPipeline, StableDiffusionXLInpaintPipelin
 
 
 # Mock functions
-def load():
+def load(model_repo=None):
+
+    if model_repo == None:
+        model_repo = "stabilityai/stable-diffusion-xl-base-1.0"
+
     if 'base' not in gs.data['models']:
         pipe = StableDiffusionXLPipeline.from_pretrained(
-            "stabilityai/stable-diffusion-xl-base-1.0", torch_dtype=torch.float16, variant="fp16",
+            model_repo, torch_dtype=torch.float16, variant="fp16",
             use_safetensors=True, device_map="auto"
         )
         gs.data["models"]["base"] = pipe

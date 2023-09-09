@@ -106,7 +106,7 @@ def load_pipeline(model_choice, model_repo=None):
         if model_choice == "XL":
             base_pipe = DiffusionPipeline.from_pretrained(
                 model_repo, torch_dtype=torch.float16, variant="fp16",
-                use_safetensors=True
+                use_safetensors=True, device_map='auto'
             )
 
             base_pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
@@ -144,6 +144,7 @@ def load_pipeline(model_choice, model_repo=None):
                 torch_dtype=torch.float16,
                 use_safetensors=True,
                 variant="fp16",
+                device_map='auto'
             )
             if lowvram:
                 refiner_pipe.enable_model_cpu_offload()
@@ -250,7 +251,7 @@ def plugin_tab(*args, **kwargs):
 
     if generate_button:
         model_choice = selected_values['BasePipeline']
-        load_pipeline(model_choice)
+        load_pipeline(model_choice, model_repo='Lykon/dreamshaper-xl-1-0')
 
         args = get_generation_args(selected_values, gs.data["models"]["base"])
         steps = args["num_inference_steps"]

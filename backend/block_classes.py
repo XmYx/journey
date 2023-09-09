@@ -2,6 +2,7 @@ import gc
 
 import torch
 from PIL import Image
+from diffusers.models.attention_processor import AttnProcessor2_0
 
 from backend.block_base import register_class, BaseBlock
 from extras.block_helpers import check_args, style, list_model_files
@@ -45,7 +46,7 @@ class DiffusersXLLoaderBlock(BaseBlock):
     def __init__(self):
         super().__init__()
         self.dropdown('model_select', ["XL", "Kandinsky"])
-        self.dropdown('model_repo', [key for key, _ in xl_models])
+        self.dropdown('model_repo', ["base"] + [key for key, _ in xl_models.items()])
     def fn(self, data: dict) -> dict:
         from modules.sdjourney_tab import load_pipeline
 
@@ -53,9 +54,13 @@ class DiffusersXLLoaderBlock(BaseBlock):
         selection = self.widgets[0].options[selection]
 
         model_repo = self.widgets[1].value
+        if model_repo == 'base':
+            model_repo = None
+        else:
+            model_repo = xl_models[model_repo]
 
         load_pipeline(selection, model_repo=model_repo)
-
+        gs.data['models']['base'].unet.set_attn_processor(AttnProcessor2_0())
         return data
 @register_class
 class DiffusersParamsBlock(BaseBlock):
@@ -132,6 +137,8 @@ class DiffusersSamplerBlock(BaseBlock):
                 progressbar.progress(normalized_i)
             preview_latents(latents)
         args["callback"] = callback
+        seed = 420
+        args["generator"] = torch.Generator('cuda').manual_seed(seed)
         show_image = self.widgets[1].value
         # if hasattr(self, 'index'):
         #     show_image = self.index + 1 == len(gs.data['added_blocks'])
@@ -147,7 +154,7 @@ class DiffusersSamplerBlock(BaseBlock):
                 st.session_state.images = []
             st.session_state.images.append(result[1])
             if len(st.session_state['images']) > 8:
-                if len(st.session_state['start_index']) < 8:
+                if st.session_state['start_index'] < 8:
                     st.session_state.start_index = 8
                 else:
                     st.session_state.start_index += 1
@@ -305,9 +312,9 @@ class LoraLoaderBlock(BaseBlock):
         if "base" in gs.data['models']:
             try:
                 gs.data["models"]["base"].load_lora_weights(lora)
+                #gs.data["models"]["base"].fuse_lora()
             except Exception as e:
                 print("Could not load LORA", repr(e))
-
         return data
 
 

@@ -1,4 +1,5 @@
 import argparse
+import multiprocessing
 import os
 from pathlib import Path
 
@@ -56,8 +57,9 @@ def plugin_tab(*args, **kwargs):
             n_frames=st.session_state.n_frames,
             inversion_prompt=st.session_state.inversion_prompt
         )
-        save_video_frames(st.session_state.data_path, img_size=(opt.H, opt.W))
+        video_name = Path(st.session_state.data_path).stem
+        if not os.path.isdir(f'data/{video_name}'):
+            save_video_frames(st.session_state.data_path, img_size=(opt.H, opt.W))
         opt.data_path = os.path.join('data', Path(st.session_state.data_path).stem)
         os.makedirs(opt.data_path, exist_ok=True)
-        # Assume prep is a function that takes this options object
         prep(opt)

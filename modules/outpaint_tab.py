@@ -28,7 +28,7 @@ class SchedulerType(Enum):
 
 scheduler_type_values = [item.value for item in SchedulerType]
 
-def do_inpaint(prompt, init_image, mask_image, scheduler_type, steps, guidance_scale, strength, seed, selected_repo):
+def do_inpaint(prompt, init_image, mask_image, scheduler_type, steps, guidance_scale, strength, seed, selected_repo, model_name="inpaint"):
 
     scheduler = SchedulerType(scheduler_type)
 

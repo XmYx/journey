@@ -45,7 +45,7 @@ def plugin_tab(*args, **kwargs):
             "negative_prompt": st.session_state.negative_prompt,
             "guidance_scale": st.session_state.guidance_scale,
             # Add other parameters from preprocessing tab
-            "data_path": st.session_state.data_path,
+            "data_path": "data/forestgump",
             "H": st.session_state.H,
             "W": st.session_state.W,
             "sd_version": st.session_state.sd_version,
@@ -54,6 +54,9 @@ def plugin_tab(*args, **kwargs):
             "save_steps": st.session_state.save_steps,
             "n_frames": st.session_state.n_frames,
             "inversion_prompt": st.session_state.inversion_prompt,
+            "seed": 1,
+            "device": "cuda",
+            "latents_path": "latents"
         }
         # Call your main function, e.g., run_processing
         run(config)
