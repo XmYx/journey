@@ -1,11 +1,21 @@
+import os
 import subprocess
 import sys
 import time
 
+from extras import singleton
+
+def clone_if_not_exists(repo_url, local_path):
+    """Clone the repository if the directory doesn't exist."""
+    if not os.path.isdir(local_path):
+        subprocess.run(["git", "clone", repo_url, local_path])
+
+# Clone TokenFlow if not exists
+clone_if_not_exists("https://github.com/XmYx/TokenFlow.git", "src/TokenFlow")
+
 sys.path.append('CodeFormer')
 sys.path.append('src/TokenFlow')
 
-from extras import singleton
 
 singleton.data = {}
 singleton.data["models"] = {}
