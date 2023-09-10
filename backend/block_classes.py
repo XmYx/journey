@@ -1,4 +1,5 @@
 import gc
+import secrets
 
 import torch
 from PIL import Image
@@ -91,9 +92,14 @@ class DiffusersPromptBlock(BaseBlock):
     def __init__(self):
         super().__init__()
         self.text('prompt', multiline=True)
+        self.checkbox('Negative')
 
     def fn(self, data: dict) -> dict:
-        data["prompt"] = self.widgets[0].value
+        negative = self.widgets[1].value
+        if not negative:
+            data["prompt"] = self.widgets[0].value
+        else:
+            data["negative_prompt"] = self.widgets[0].value
         print(data)
 
         return data
@@ -119,6 +125,8 @@ class DiffusersSamplerBlock(BaseBlock):
         super().__init__()
         self.dropdown('Scheduler', scheduler_type_values)
         self.checkbox('Force full sample')
+        self.number('Seed', -1, 1, -1, 4294967296)
+
     def fn(self, data: dict) -> dict:
         if hasattr(self, 'index'):
             print("Block Index", self.index)
@@ -137,7 +145,9 @@ class DiffusersSamplerBlock(BaseBlock):
                 progressbar.progress(normalized_i)
             preview_latents(latents)
         args["callback"] = callback
-        seed = 420
+        seed = self.widgets[2]
+        if seed == -1:
+            seed = secrets.randbelow(4294967296)
         args["generator"] = torch.Generator('cuda').manual_seed(seed)
         show_image = self.widgets[1].value
         # if hasattr(self, 'index'):
