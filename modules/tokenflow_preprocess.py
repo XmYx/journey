@@ -10,7 +10,7 @@ import streamlit as st
 from src.TokenFlow.preprocess import prep
 from src.TokenFlow.util import save_video_frames
 
-plugin_info = {"name": "Stable Diffusion Preprocessor"}
+plugin_info = {"name": "TokenFlow Preprocessor"}
 
 
 def get_config():

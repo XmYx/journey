@@ -11,7 +11,7 @@ from src.TokenFlow.run_tokenflow_pnp import run as run_pnpedit
 
 # Import other required modules
 
-plugin_info = {"name": "Stable Diffusion Processor"}
+plugin_info = {"name": "TokenFlow Processor"}
 
 
 def get_edit_config():

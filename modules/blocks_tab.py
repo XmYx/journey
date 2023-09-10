@@ -12,6 +12,14 @@ def display_preview():
             st.session_state.preview_holder = st.image(st.session_state.preview)
         else:
             st.session_state.preview_holder = st.empty()
+
+def run_pipeline(start_index=0):
+    cumulative_data = {}
+    for block in gs.data['added_blocks'][start_index:]:
+        cumulative_data = block.fn(cumulative_data)
+    return cumulative_data
+
+
 def plugin_tab(tab, tab_names):
     initialize()
 
@@ -25,11 +33,15 @@ def plugin_tab(tab, tab_names):
     if "preview_holder" not in st.session_state:
         with col2:
             st.session_state.preview_holder = st.empty()
+    form = st.form('blocks')
+    with form:
+        if st.form_submit_button("Run Blocks"):
+            result = run_pipeline()
 
-    display_main_button(col1)
-    # Display each block with its control buttons
-    for index, block in enumerate(gs.data['added_blocks']):
-        display_block_with_controls(block, index, col1)
+        #display_main_button(col1)
+        # Display each block with its control buttons
+        for index, block in enumerate(gs.data['added_blocks']):
+            display_block_with_controls(block, index, col1)
 
     with col2:
         display_preview()

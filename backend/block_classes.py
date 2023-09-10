@@ -145,7 +145,7 @@ class DiffusersSamplerBlock(BaseBlock):
                 progressbar.progress(normalized_i)
             preview_latents(latents)
         args["callback"] = callback
-        seed = self.widgets[2]
+        seed = self.widgets[2].value
         if seed == -1:
             seed = secrets.randbelow(4294967296)
         args["generator"] = torch.Generator('cuda').manual_seed(seed)
