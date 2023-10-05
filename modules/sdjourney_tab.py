@@ -102,7 +102,7 @@ def load_pipeline(model_choice, model_repo=None):
     print("LOADED:", gs.base_loaded)
     if model_repo == None:
         model_repo = "stabilityai/stable-diffusion-xl-base-1.0"
-    if gs.base_loaded != model_choice:
+    if gs.base_loaded != model_repo:
         if model_choice == "XL":
             base_pipe = DiffusionPipeline.from_pretrained(
                 model_repo, torch_dtype=torch.float16, variant="fp16",
@@ -134,30 +134,60 @@ def load_pipeline(model_choice, model_repo=None):
                                                              torch_dtype=torch.float16)
             gs.data["models"]["base"] = pipe
             print("Kandinsky loaded")
-        if 'refiner' not in gs.data['models']:
-            from modules.sdjourney_tab import lowvram
+            model_repo = 'kandinsky'
+        # if 'refiner' not in gs.data['models']:
+        #     from modules.sdjourney_tab import lowvram
+        #
+        #     refiner_pipe = DiffusionPipeline.from_pretrained(
+        #         "stabilityai/stable-diffusion-xl-refiner-1.0",
+        #         # text_encoder_2=gs.data["models"]["base"].text_encoder_2,
+        #         # vae=gs.data["models"]["base"].vae,
+        #         torch_dtype=torch.float16,
+        #         use_safetensors=True,
+        #         variant="fp16",
+        #         device_map='auto'
+        #     )
+        #     if lowvram:
+        #         refiner_pipe.enable_model_cpu_offload()
+        #         refiner_pipe.enable_vae_slicing()
+        #         refiner_pipe.enable_vae_tiling()
+        #     else:
+        #         refiner_pipe.disable_attention_slicing()
+        #     refiner_pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
+        #     gs.data["models"]["refiner"] = refiner_pipe
+        #     print("Refiner Loaded")
 
-            refiner_pipe = DiffusionPipeline.from_pretrained(
-                "stabilityai/stable-diffusion-xl-refiner-1.0",
-                # text_encoder_2=gs.data["models"]["base"].text_encoder_2,
-                # vae=gs.data["models"]["base"].vae,
-                torch_dtype=torch.float16,
-                use_safetensors=True,
-                variant="fp16",
-                device_map='auto'
-            )
-            if lowvram:
-                refiner_pipe.enable_model_cpu_offload()
-                refiner_pipe.enable_vae_slicing()
-                refiner_pipe.enable_vae_tiling()
-            else:
-                refiner_pipe.disable_attention_slicing()
-            refiner_pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
-            gs.data["models"]["refiner"] = refiner_pipe
-            print("Refiner Loaded")
+
+        gs.base_loaded = model_repo
+def load_refiner_pipeline(model_repo=None):
+
+    print("LOADED:", gs.refiner_loaded)
+    if model_repo == None:
+        model_repo = "stabilityai/stable-diffusion-xl-base-1.0"
+    if gs.refiner_loaded != model_repo:
+        from modules.sdjourney_tab import lowvram
+
+        refiner_pipe = StableDiffusionXLImg2ImgPipeline.from_pretrained(
+            model_repo,
+            # text_encoder_2=gs.data["models"]["base"].text_encoder_2,
+            # vae=gs.data["models"]["base"].vae,
+            torch_dtype=torch.float16,
+            use_safetensors=True,
+            variant="fp16",
+            device_map='auto'
+        )
+        if lowvram:
+            refiner_pipe.enable_model_cpu_offload()
+            refiner_pipe.enable_vae_slicing()
+            refiner_pipe.enable_vae_tiling()
+        else:
+            refiner_pipe.disable_attention_slicing()
+        refiner_pipe.unet.to(memory_format=torch.channels_last)  # in-place operation
+        gs.data["models"]["refiner"] = refiner_pipe
+        print("Refiner Loaded")
 
 
-        gs.base_loaded = model_choice
+        gs.refiner_loaded = model_repo
 
 def preview_latents(latents):
     if "rgb_factor" not in gs.data:
@@ -168,6 +198,7 @@ def preview_latents(latents):
             [-0.158, 0.189, 0.264],  # L3
             [-0.184, -0.271, -0.473],  # L4
         ], dtype=latents.dtype, device=latents.device)
+    images = []
     for idx, latent in enumerate(latents):
         latent_image = latent.permute(1, 2, 0) @ gs.data["rgb_factor"]
 
@@ -177,19 +208,75 @@ def preview_latents(latents):
                          .byte()).cpu()
         rgb_image = latents_ubyte.numpy()[:, :, ::-1]
         image = Image.fromarray(rgb_image)
-        st.session_state.image_placeholders[idx].image(image, width=image.size[0] * 4)
+        images.append(image)
+    # Organize the images into a grid
+    grid_width = 2
+    grid_height = (len(images) + 1) // 2
+
+    # Assuming all images are of the same size
+    img_width, img_height = images[0].size
+    grid_img = Image.new('RGB', (img_width * grid_width, img_height * grid_height))
+
+    for i, img in enumerate(images):
+        row = i // grid_width
+        col = i % grid_width
+        grid_img.paste(img, (col * img_width, row * img_height))
+
+    st.session_state.image_placeholders[0].image(grid_img, width=grid_img.size[0])
+
+    #st.session_state.image_placeholders[idx].image(image, width=image.size[0] * 4)
 # from streamlit_drawable_canvas import st_canvas
 
 def inpaint_image(image, mask):
     return image
+
+def show_processed_latents(col):
+    with col:
+        st.session_state.image = st.empty()
+        #steps = selected_values['Steps']
+        num_images = len(st.session_state["images"])
+        cols = st.columns(2)
+        if 'image_placeholders' not in st.session_state:
+            for j in range(len(cols)):
+                st.session_state.image_placeholders = [cols[j].empty() for _ in range(4)]
+        if num_images > 0:
+            # Determine the number of rows and columns for the grid
+            num_rows = int(np.ceil(np.sqrt(num_images)))
+            for i in range(num_rows):
+                # Assuming a grid with 2 columns for simplicity
+                for j in range(2):  # Loop over the 2 columns
+                    index = i * 2 + j
+                    if index < num_images:  # Check if we haven't exceeded the number of images
+                        cols[j].image(st.session_state["images"][index])
+def show_processed_images(col, selected_values=None, callback=None):
+    with col:
+        st.session_state.image = st.empty()
+        #steps = selected_values['Steps']
+        num_images = len(st.session_state["images"])
+        cols = st.columns(2)
+        if 'image_placeholders' not in st.session_state:
+            for j in range(len(cols)):
+                st.session_state.image_placeholders = [cols[j].empty() for _ in range(4)]
+        if num_images > 0:
+            # Determine the number of rows and columns for the grid
+            num_rows = int(np.ceil(np.sqrt(num_images)))
+            for i in range(num_rows):
+                # Assuming a grid with 2 columns for simplicity
+                for j in range(2):  # Loop over the 2 columns
+                    index = i * 2 + j
+                    if index < num_images:  # Check if we haven't exceeded the number of images
+                        cols[j].image(st.session_state["images"][index])
+                        if cols[j].button(f"Refine {index + 1}"):
+                            process_image(st.session_state["latents"][index], selected_values, callback)
+
 
 def plugin_tab(*args, **kwargs):
 
     refresh = None
     col1, col2 = st.columns([2, 3])
     # Initialize the function queue
-    if 'function_queue' not in st.session_state:
-        st.session_state.function_queue = deque()
+    # if 'function_queue' not in st.session_state:
+    #     st.session_state.function_queue = deque()
     # Check and initialize session states
     if 'upscaled_image' not in st.session_state:
         st.session_state.upscaled_image = None
@@ -202,8 +289,12 @@ def plugin_tab(*args, **kwargs):
             normalized_i = i / steps
             progress_bar.progress(normalized_i)
             if latents != None:
+
+                #show_processed_images(col2, selected_values, callback)
+
                 preview_latents(latents)
-        with st.form('SD Journey'):
+                #show_processed_latents(col2)
+        with st.form("Journey"):
             selected_values = dynamic_controls(controls_config)
             generate_button = st.form_submit_button("Generate")
 
@@ -225,24 +316,7 @@ def plugin_tab(*args, **kwargs):
         #     st.image(st.session_state.image.image_data)
             # if st.button("Inpaint"):
             #     st.session_state.upscaled_image = inpaint_image(st.session_state.upscaled_image, st.session_state.image.image_data )
-        st.session_state.image = st.empty()
-        steps = selected_values['Steps']
-        num_images = len(st.session_state["images"])
-        cols = st.columns(2)
-        if 'image_placeholders' not in st.session_state:
-            for j in range(len(cols)):
-                st.session_state.image_placeholders = [cols[j].empty() for _ in range(4)]
-        if num_images > 0:
-            # Determine the number of rows and columns for the grid
-            num_rows = int(np.ceil(np.sqrt(num_images)))
-            for i in range(num_rows):
-                  # Assuming a grid with 2 columns for simplicity
-                for j in range(2):    # Loop over the 2 columns
-                    index = i * 2 + j
-                    if index < num_images:  # Check if we haven't exceeded the number of images
-                        cols[j].image(st.session_state["images"][index])
-                        if cols[j].button(f"Refine {index + 1}"):
-                            process_image(st.session_state["latents"][index], selected_values, callback)
+        show_processed_images(col2, selected_values, callback)
     with col1:
         # load_btn = st.button("Pre-Load Models")
         # Display upscaled image if it exists
@@ -252,21 +326,21 @@ def plugin_tab(*args, **kwargs):
     if generate_button:
         model_choice = selected_values['BasePipeline']
         load_pipeline(model_choice, model_repo='Lykon/dreamshaper-xl-1-0')
-
+        load_refiner_pipeline(model_repo='Lykon/dreamshaper-xl-1-0')
         args = get_generation_args(selected_values, gs.data["models"]["base"])
         steps = args["num_inference_steps"]
         scheduler = selected_values['Scheduler']
         scheduler_enum = SchedulerType(scheduler)
         get_scheduler(gs.data["models"]["base"], scheduler_enum)
         generate(callback=callback, args=args)
-    # while st.session_state.function_queue:
-    #     func = st.session_state.function_queue.popleft()
-    #     func()
-    #
-    #     torch.cuda.empty_cache()
-    #     torch.cuda.ipc_collect()
+        # while st.session_state.function_queue:
+        #     func = st.session_state.function_queue.popleft()
+        #     func()
+        #
+        #     torch.cuda.empty_cache()
+        #     torch.cuda.ipc_collect()
 
-        refresh = True
-    if refresh:
-        st.experimental_rerun()
-        refresh = None
+        #     refresh = True
+        # if refresh:
+        #     st.experimental_rerun()
+        #     refresh = None

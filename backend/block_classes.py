@@ -63,6 +63,32 @@ class DiffusersXLLoaderBlock(BaseBlock):
         load_pipeline(selection, model_repo=model_repo)
         gs.data['models']['base'].unet.set_attn_processor(AttnProcessor2_0())
         return data
+
+
+
+@register_class
+class DiffusersXLRefinerLoaderBlock(BaseBlock):
+
+    name = "SD XL Refiner Loader"
+
+    def __init__(self):
+        super().__init__()
+        self.dropdown('model_repo', ["base"] + [key for key, _ in xl_models.items()])
+    def fn(self, data: dict) -> dict:
+        from modules.sdjourney_tab import load_pipeline
+
+        selection = self.widgets[0].selected_index
+        selection = self.widgets[0].options[selection]
+
+        model_repo = self.widgets[1].value
+        if model_repo == 'base':
+            model_repo = None
+        else:
+            model_repo = xl_models[model_repo]
+
+        load_refiner_pipeline(model_repo=model_repo)
+        gs.data['models']['base'].unet.set_attn_processor(AttnProcessor2_0())
+        return data
 @register_class
 class DiffusersParamsBlock(BaseBlock):
 
@@ -206,9 +232,9 @@ def preview_latents(latents):
 
     latents.to('cpu')
     del latents
-
-    st.session_state.preview_holder.image(image)
-
+    width = image.size[0] * 4
+    print(width)
+    st.session_state.preview_holder.image(image, width=width)
 @register_class
 class DiffusersRefinerBlock(BaseBlock):
 
@@ -304,7 +330,9 @@ class CodeformersBlock(BaseBlock):
         st.session_state.images.append(images)
         if len(st.session_state['images']) > 8:
             if len(st.session_state['start_index']) < 8:
-                st.session_state.start_index = 8
+                st.session_state.start_index = 0
+            elif len(st.session_state['start_index']) == 8:
+                st.session_state.start_index = 7
             else:
                 st.session_state.start_index += 1
         return data

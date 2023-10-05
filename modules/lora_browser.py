@@ -102,6 +102,38 @@ def load_lora():
     st.session_state.last_lora = repo_name
 
 
+class LoraDiffusion:
+
+    def __init__(self):
+
+        self.loras = ['None', ]
+        self.pipeline = SDXL
+        self.lora_index = 0
+
+    def get_args(self, args):
+
+        args = {
+
+
+        }
+
+        return args
+
+    def switch_lora(self, lora_index):
+        if self.lora_index != lora_index:
+            self.pipeline.load_lora_from_weights(loras[lora_index])
+            self.lora_index = lora_index
+        pass
+
+    def infer(self, args):
+
+        self.switch_lora(args.get('lora_index', 0))
+
+        args = self.get_args(args)
+
+        image = self.pipeline(**args).images
+
+        return image
 
 # def merge_incompatible_lora(full_path_lora, lora_scale):
 #     for weights_file in [full_path_lora]:

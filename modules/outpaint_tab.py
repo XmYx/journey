@@ -176,19 +176,19 @@ def plugin_tab(tabs, tab_names):
             global model_name
             model_name = st.selectbox("Model", options=list(name_to_repo.keys()))
             selected_repo = name_to_repo[model_name]
-
-            prompt = st.text_input('Prompt')
+            tab_name = "outpaint"
+            prompt = st.text_input('Prompt', key=f"{tab_name}_prompt")
             # Allow the user to input the target size and scale
             target_width = st.number_input('Target width', min_value=64, value=768, step=8)
             target_height = st.number_input('Target height', min_value=64, value=768, step=8)
             scale = st.slider('Scale', min_value=0.1, max_value=2.0, step=0.01, value=0.4)
             offset_x = st.slider('X Offset', min_value=0, max_value=1024, step=8, value=64)
             offset_y = st.slider('Y Offset', min_value=0, max_value=1024, step=8, value=64)
-            scheduler_type = st.selectbox("Scheduler", scheduler_type_values)
-            steps = st.number_input("Steps", min_value=1, max_value=1000, value=50)
-            guidance_scale = st.number_input("Guidance Scale", min_value=0.0, max_value=25.0, value=6.5)
-            strength = st.number_input("Strength", min_value=0.0, max_value=1.0, value=1.0)
-            seed = st.text_input("Seed", value="0")
+            scheduler_type = st.selectbox("Scheduler", scheduler_type_values, key=f"{tab_name}_scheduler")
+            steps = st.number_input("Steps", min_value=1, max_value=1000, value=50, key=f"{tab_name}_steps")
+            guidance_scale = st.number_input("Guidance Scale", min_value=0.0, max_value=25.0, value=6.5, key=f"{tab_name}_guidance_scale")
+            strength = st.number_input("Strength", min_value=0.0, max_value=1.0, value=1.0, key=f"{tab_name}_str")
+            seed = st.text_input("Seed", value="0", key=f"{tab_name}_seed")
             expand = st.number_input("Mask Expansion", min_value=0, max_value=256, step=1, value=8)
 
             # Process the image

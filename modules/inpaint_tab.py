@@ -8,7 +8,7 @@ from streamlit_drawable_canvas import st_canvas
 from extras.sdjourney_backend import scheduler_type_values
 from modules.outpaint_tab import do_inpaint
 
-plugin_info = {"name": "DynaUI"}
+plugin_info = {"name": "Inpaint"}
 MAX_SIZE = 1280
 
 
